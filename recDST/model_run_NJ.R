@@ -19,6 +19,7 @@ l_w_conversion <-readr::read_csv(file.path(here::here("data-raw/size_data/L_W_Co
 
 
 directed_trips<-readRDS(file.path(here::here(paste0("data-raw/directed_trips/directed_trips_NJ.rds")))) 
+
 print("out directed trips")
 if(input$SF_NJ_input_type == "All Modes Combined"){
   directed_trips<- directed_trips %>%
