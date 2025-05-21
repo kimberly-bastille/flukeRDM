@@ -2120,7 +2120,7 @@ server <- function(input, output, session) {
   ############## NEW JERSEY  Split ############################################################
   output$addNJ_Split <- renderUI({
     if(any("NJSplit" == input$state)){
-      
+      tagList(
       ################################ New Jersey North ##############################################
       fluidRow( 
         style = "background-color: #FED9A6;",
@@ -2265,7 +2265,7 @@ server <- function(input, output, session) {
                                                           min = 0, max = 100, value = 0)),
                                       column(6,
                                              sliderInput(inputId = "SCUPnjnSH_2_len", label ="Min Length",
-                                                         min = 8, max = 12, value = 10, step = .5)))))),
+                                                         min = 8, max = 12, value = 10, step = .5))))))),
 
   
   
@@ -2415,10 +2415,11 @@ server <- function(input, output, session) {
                                       column(6,
                                              sliderInput(inputId = "SCUPnjsSH_2_len", label ="Min Length",
                                                          min = 8, max = 12, value = 10, step = .5)))))))
-    }
+
     
-  
-  })
+      )
+  }
+      })
   
   
   ############# NJ North Breakout by mode ######################################
