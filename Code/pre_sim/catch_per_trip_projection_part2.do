@@ -667,14 +667,14 @@ foreach s of local statez {
 local statez "NJ"
 foreach s of local statez {
 
-    forvalues i = 1/100 {
+    forvalues i = 1/1 {
 
-		*local s = "RI"
-		*local i=1
+		local s = "NJ"
+		local i=1
 		*----------------------------------------------------
         * Read simulated catch draws
         *----------------------------------------------------
-        import excel using "$iterative_input_data_cd\proj_catch_draws_`s'_`i'.xlsx", clear firstrow
+        import excel using "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data\archive\proj_catch_draws_xlsdta\proj_catch_draws_`s'_`i'.xlsx", clear firstrow
 
         distinct id
         local n_simulated_draw = r(ndistinct) //number of catch draws simulation per strata
@@ -700,7 +700,7 @@ foreach s of local statez {
         * Pull directed trips for draw `i'
         *----------------------------------------------------
 	
-        import excel using "$iterative_input_data_cd\directed_trips_calibration_new_`s'.xlsx", clear firstrow
+        import excel using "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data\archive\directed_trips_calibration_new_csvxlsx\directed_trips_calibration_new_`s'.xlsx", clear firstrow
         keep if draw == `i'
 
         * waves
@@ -813,10 +813,11 @@ foreach s of local statez {
 		use `master', clear
 		compress                             
 
-        save "$iterative_input_data_cd\proj_catch_draws_`s'_`i'.dta", replace
+        *save "$iterative_input_data_cd\proj_catch_draws_`s'_`i'.dta", replace
         clear                               
     }
 }
+		use `master', clear
 
 
 
@@ -1291,7 +1292,7 @@ foreach s of local statez {
 local statez "NC"
 foreach s of local statez {
 
-    forvalues i = 83/100 {
+    forvalues i = 1/100 {
 
 		*local s = "RI"
 		*local i=1

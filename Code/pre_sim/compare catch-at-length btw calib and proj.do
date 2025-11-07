@@ -18,6 +18,8 @@ drop if _merge==2
 reshape long fitted_prob, i(length_bin draw state species) j(year) string
 destring year, replace
 
+
+gen domain=state+"_"+species
 graph box fitted_prob if species=="bsb" & state=="CT", over(year, label(labsize(vsmall))) over(length_bin, label(labsize(vsmall)))  ///
 asyvars  box(1, color(navy)) box(2, color(maroon)) title("catch-at-length probability, BSB North") ///
     legend(position(bottom) rows(1))

@@ -209,7 +209,7 @@ foreach s of local statez {
 			local n_obs=`r(N)'
 			
             if `n_obs' == 0 {                     // domain absent in catch draws
-                set obs `n', clear 
+                set obs `n'
                 foreach v in sf_keep_sim sf_rel_sim sf_cat bsb_keep_sim bsb_rel_sim bsb_cat scup_keep_sim scup_rel_sim scup_cat {
                     replace `v' = 0
                 }
@@ -412,7 +412,7 @@ foreach s of local statez {
 			local n_obs=`r(N)'
 			
             if `n_obs' == 0 {                     // domain absent in catch draws
-                set obs `n', clear 
+                set obs `n'
                 foreach v in sf_keep_sim sf_rel_sim sf_cat bsb_keep_sim bsb_rel_sim bsb_cat scup_keep_sim scup_rel_sim scup_cat {
                     replace `v' = 0
                 }
@@ -614,7 +614,7 @@ foreach s of local statez {
 			local n_obs=`r(N)'
 			
             if `n_obs' == 0 {                     // domain absent in catch draws
-                set obs `n', clear 
+                set obs `n'
                 foreach v in sf_keep_sim sf_rel_sim sf_cat bsb_keep_sim bsb_rel_sim bsb_cat scup_keep_sim scup_rel_sim scup_cat {
                     replace `v' = 0
                 }
