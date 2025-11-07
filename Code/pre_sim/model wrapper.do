@@ -116,7 +116,7 @@ global inflation_expansion=1.31
 global project_path "C:\Users\andrew.carr-harris\Desktop\Git\flukeRDM" /* Lou's project path */
 *global iterative_data_path "C:\Users\andrew.carr-harris\Desktop\flukeRDM_iterative_data" 
 *global project_path "C:\Users\min-yang.lee\Documents\rdmtool\lou_files\cod_haddock"  /* Min-Yang's project path */
-global iterative_data_path "E:\Lou's projects\flukeRDM\flukeRDM_iterative_data"/* Lou's path for iterative catch data that is too large to upload to GitHub*/  /* Everything Kim needs to run the model on the app */
+global iterative_data_path "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data"/* Lou's path for iterative catch data that is too large to upload to GitHub*/  /* Everything Kim needs to run the model on the app */
 
 global input_data_cd "C:\Users\andrew.carr-harris\Desktop\MRIP_data_2025" /* Lou's local data path */
 global input_code_cd "${project_path}\Code\pre_sim"
