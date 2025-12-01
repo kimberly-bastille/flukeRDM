@@ -17,7 +17,7 @@ ui <- fluidPage(
              ### Figure and table output by state
              tabsetPanel(
                tabPanel("MA", 
-                        shiny::h2("Massachusettes"),
+                        shiny::h2("Massachusetts"),
                         plotly::plotlyOutput(outputId = "ma_rhl_fig"),# Harvest
                         plotly::plotlyOutput(outputId = "ma_CV_fig"),# Angler Satis
                         plotly::plotlyOutput(outputId = "ma_trips_fig"), # Ntrips
