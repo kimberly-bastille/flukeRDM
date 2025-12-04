@@ -48,7 +48,7 @@ global wavelist 1 2 3 4 5 6
 global calibration_year "(year==2024 & inlist(wave, 1, 2, 3, 4, 5, 6))"
 global calibration_year_num 2024
 
-global projection_year "(year==2025 & inlist(wave, 1, 2, 3)) | (year==2024) | (year==2022 & inlist(wave, 4, 5, 6))" //ADJUST THIS AFTER MRIP DATA RELEASE
+global projection_year "(year==2025 & inlist(wave, 1, 2, 3)) | (year==2024) | (year==2023 & inlist(wave, 4, 5, 6))" //ADJUST THIS AFTER MRIP DATA RELEASE
 
 global calibration_catch_per_trip_years "(year==2024 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2023 & inlist(wave, 6)) | (year==2023 & inlist(wave, 1, 2, 3, 4, 5)) | (year==2022 & inlist(wave, 6))"
 

@@ -3,7 +3,7 @@ cd $input_data_cd
 
 
 *This code only needs to be run once after new MRIP data enters the repo
-/*
+
 foreach wave in	$yr_wvs {				
 
 capture confirm file "trip_`wave'.dta"
@@ -51,7 +51,7 @@ else{
 }
 
 }
-*/
+
 
 /*catchlist -- this assembles then names of files that are needed in the catchlist */
 /*Check to see if the file exists */	/* If the file exists, add the filename to the list if there are observations */
