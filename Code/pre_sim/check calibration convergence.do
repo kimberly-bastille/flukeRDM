@@ -8,7 +8,8 @@
 * runs that did not converge but were closest in terms of absolute or percent differences in # of harvested fish. 
 * The two strata that did not converge accounted for little harvest. 
 
-import excel using "$iterative_input_data_cd\calibrated_model_stats.xlsx", clear firstrow
+import excel using "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data\archive\miscellaneous\calibrated_model_stats.xlsx", clear firstrow
+drop keep_to_rel* rel_to_keep* p_* prop* n_*
 gen abs_diff_keep=abs(diff_keep)
 gen abs_diff_pct_keep=abs(pct_diff_keep)
 
@@ -74,8 +75,8 @@ gen bsb_convergence1=1 if state=="NC" & mode=="fh" & species=="bsb" & tot_conv==
 *For NC, most non-converge was sf
 browse
 sort state draw  species mode
-browse if state=="DE" & tot_conv==2 & species=="sf" & sf_convergence==0 & tot_conv==2
-browse if state=="DE" & tot_conv==2  & sf_convergence==0 & tot_conv==2
+browse if state=="DE" & tot_conv==2 & species=="sf" & sf_convergence==0 
+browse if state=="DE" & tot_conv==2 & sf_convergence==0 
 
 sort  diff_keep
 gen sf_convergence1=1 if  state=="DE" & mode=="fh" & species=="sf" & tot_conv==2 & sf_convergence==0 & diff_keep>-600
@@ -128,6 +129,16 @@ drop species
 duplicates drop 
 sort state mode  draw
 bysort mode state (draw): gen n=_n
+
+*Extra draws for kim
+preserve
+keep if inlist(state, "RI", "VA", "MD")
+keep if n>100 & n<=105
+rename n draw2
+drop domain
+export excel "$iterative_input_data_cd\calibration_good_draws_extras.xlsx", firstrow(variables) replace
+restore
+
 keep if n<=100
 
 rename n draw2
