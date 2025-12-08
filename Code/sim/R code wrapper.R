@@ -37,7 +37,7 @@ conflicts_prefer(dplyr::count)
 #Set up R globals for input/output data and code scripts
 code_cd=here("Code", "sim")
 input_data_cd="C:/Users/andrew.carr-harris/Desktop/MRIP_data_2025"
-iterative_input_data_cd="E:/Lou's projects/flukeRDM/flukeRDM_iterative_data"
+iterative_input_data_cd="E:/Lou_projects/flukeRDM/flukeRDM_iterative_data"
 
 ###################################################
 ###############Pre-sim Stata code##################
@@ -300,6 +300,9 @@ for(st in statez) {
   write_xlsx(directed_trips, file.path(iterative_input_data_cd, paste0("directed_trips_calibration_new_", st, ".xlsx")))
   
 }
+
+
+
 
 
 # Transfer projected catch draw files from .dta to .feather

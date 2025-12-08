@@ -9,10 +9,15 @@
 
 * A1) 
 * Simulated total catch by state and species 	
-use "$iterative_input_data_cd\simulated_catch_totals.dta", clear 
+import excel using "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data\calibration_good_draws_extras.xlsx", clear first 
+tempfile gooddraws
+save `gooddraws', replace
 
-collapse (sum)  tot_sf_cat_sim tot_bsb_cat_sim tot_scup_cat_sim, by(state draw)
+use "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data\simulated_catch_totals.dta", clear 
+merge 1:1 state mode draw using `gooddraws', keep(3) nogen
 
+collapse (sum)  tot_sf_cat_sim tot_bsb_cat_sim tot_scup_cat_sim, by(state draw2)
+rename draw draw
 reshape long tot_, i(draw state) j(species) string
 
 split species, parse(_)
@@ -31,7 +36,7 @@ save `catch2024', replace
 import delimited using "$iterative_input_data_cd/baseline_catch_at_length.csv", clear  
 sort draw state species length
 
-merge m:1 species state draw using `catch2024'
+merge m:1 species state draw using `catch2024', keep(3)
 drop _merge
 
 *A3) 
@@ -42,6 +47,13 @@ gen domain=state+"_"+species
 
 tempfile cal
 save `cal', replace 
+
+preserve
+keep domain
+duplicates drop
+tempfile domain_list
+save `domain_list', replace
+restore
 
 
 * B) Compute population numbers-at-length in the calibration year (2024)
@@ -59,8 +71,10 @@ gen species="sf"
 gen region="all"
 duplicates drop 
 drop year
-sample $ndraws, count
+sample 5, count
 gen draw=_n
+replace draw=draw+100
+
 tempfile sf
 save `sf', replace 
 
@@ -69,8 +83,10 @@ gen species="scup"
 gen region="all"
 duplicates drop 
 drop year
-sample $ndraws, count
+sample 5, count
 gen draw=_n
+replace draw=draw+100
+
 tempfile scup
 save `scup', replace 
 
@@ -78,8 +94,10 @@ import delimited using "$input_data_cd/length_data/fit_NAA_NORTH_2024.csv", clea
 gen species="bsb"
 gen region="north"
 duplicates drop 
-sample $ndraws, count
+sample 5, count
 replace draw=_n
+replace draw=draw+100
+
 forv i=0(1)7{
 	local v = `i'+1
 	rename v`v' a`i'
@@ -93,8 +111,9 @@ import delimited using "$input_data_cd/length_data/fit_NAA_SOUTH_2024.csv", clea
 gen species="bsb"
 gen region="south"
 duplicates drop 
-sample $ndraws, count
+sample 5, count
 replace draw=_n
+replace draw=draw+100
 
 forv i=0(1)7{
 	local v = `i'+1
@@ -164,6 +183,9 @@ replace  state="NJ" if species=="scup"& n==6
 replace state="DE" if species=="scup" & n==7
 replace state="VA" if species=="scup" & n==8
 replace state="MD" if species=="scup" & n==9
+
+gen domain=state+"_"+species
+merge m:1 domain using `domain_list', keep(3) nogen
 
 tempfile pop_naa_calibration
 save `pop_naa_calibration', replace 
@@ -240,6 +262,8 @@ order state species age length
 
 *C2)  
 gen domain=state+"_"+species
+merge m:1 domain using `domain_list', keep(3) nogen
+
 levelsof domain, local(domz)
 
 tempfile base
@@ -307,7 +331,7 @@ split domain, parse(_)
 rename domain1 state
 rename domain2 species
 
-
+/*
 levelsof age if species=="sf" & state=="NJ", local(ages)
 foreach a of local ages{
 twoway(scatter naa length if age==`a' & species=="sf" & state=="NJ", connect(direct) lcol(red)   lwidth(medthick)  lpat(solid) msymbol(i) ) ///
@@ -331,8 +355,9 @@ gen prop_raw=naa/sum_raw
 drop sum*		
 
 *C4) 
-expand $ndraws
+expand 5
 bysort length age species state: gen draw=_n
+replace draw=draw+100
 
 tempfile age_length
 save `age_length', replace
@@ -488,8 +513,10 @@ gen species="sf"
 gen region="all"
 duplicates drop 
 drop year
-sample $ndraws, count
+sample 5, count
 gen draw=_n
+replace draw=draw+100
+
 tempfile sf
 save `sf', replace 
 
@@ -498,8 +525,9 @@ gen species="scup"
 gen region="all"
 duplicates drop 
 drop year
-sample $ndraws, count
+sample 5, count
 gen draw=_n
+replace draw=draw+100
 tempfile scup
 save `scup', replace 
 
@@ -507,8 +535,10 @@ import delimited using "$input_data_cd/length_data/fit_proj_NAA_NORTH_2026.csv",
 gen species="bsb"
 gen region="north"
 duplicates drop 
-sample $ndraws, count
+sample 5, count
 replace draw=_n
+replace draw=draw+100
+
 forv i=0(1)7{
 	local v = `i'+1
 	rename v`v' a`i'
@@ -522,8 +552,9 @@ import delimited using "$input_data_cd/length_data/fit_proj_NAA_SOUTH_2026.csv",
 gen species="bsb"
 gen region="south"
 duplicates drop 
-sample $ndraws, count
+sample 5, count
 replace draw=_n
+replace draw=draw+100
 
 forv i=0(1)7{
 	local v = `i'+1
@@ -639,6 +670,9 @@ replace state="DE" if species=="scup" & n==7
 replace state="VA" if species=="scup" & n==8
 replace state="MD" if species=="scup" & n==9
 
+gen domain=state+"_"+species
+merge m:1 domain using `domain_list', keep(3) nogen
+
 *2) 
 merge 1:m age state draw species using `age_length'
 sort draw state species age length 
@@ -717,8 +751,5 @@ egen sum_cal=sum(cal_2026), by(draw state species)
 gen fitted_prob=cal_2026/sum_cal
 drop sum
 
-export delimited using "$iterative_input_data_cd/projected_catch_at_length.csv", replace 
+export delimited using "E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/additional_draws/projected_catch_at_length_extra.csv", replace 
 
-import delimited using "$iterative_input_data_cd/projected_catch_at_length.csv", clear 
-collapse (mean) fitted_prob, by(state species length)
-twoway (scatter fitted_prob length if  state=="VA" & species=="bsb" ,   cmissing(no) connect(direct) lcol(gray) lwidth(med)  lpat(solid) msymbol(o) mcol(gray) ) 

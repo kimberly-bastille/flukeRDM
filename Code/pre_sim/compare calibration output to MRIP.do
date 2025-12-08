@@ -191,7 +191,7 @@ forv i=1/$ndraws{
 *local i=1
 *local s="RI"
 
-use "$input_data_cd\calib_catch_draws_`s'_`i'.dta", clear 
+use "$iterative_input_data_cd\calib_catch_draws_`s'_`i'.dta", clear 
 
 drop if dtrip==0
 
@@ -205,7 +205,7 @@ drop my_dom_id_string4
 tempfile catch
 save `catch', replace 
 
-import delimited using  "$input_data_cd\directed_trips_calibration_`s'.csv", clear 
+import delimited using  "$iterative_input_data_cd\directed_trips_calibration_`s'.csv", clear 
 drop if dtrip==0
 
 keep if draw==`i'
