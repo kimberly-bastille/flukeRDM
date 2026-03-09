@@ -4,7 +4,21 @@ library(shiny)
 library(shinyjs)
 library(dplyr)
 
-# Minor edit
+### Not sure where to put this?? ##
+#########################################################################
+files <- list.files("output", pattern = "\\.csv$", full.names = FALSE)
+
+# Extract state abbreviation
+file_df <- data.frame(
+  file = files,
+  state = str_extract(files, "(?<=output_)[A-Z]{2}"),
+  display = files |>
+    str_remove("^output_") |>
+    str_remove("_[0-9]{8}_[0-9]{6}\\.csv$")
+)
+
+states <- c("MA","RI","CT","NY","NJ","DE","MD","VA","NC")
+########################################################################
 
 #### Start UI ####
 ui <- fluidPage(
@@ -139,8 +153,28 @@ ui <- fluidPage(
               uiOutput("addDE"),
               uiOutput("addMD"),
               uiOutput("addVA"), 
-              uiOutput("addNC"))
+              uiOutput("addNC")),
+  
+  tabPanel( "Results",
+            fluidRow(
+              lapply(states, function(st){
+                
+                selectInput(
+                  inputId = paste0("policy_", st),
+                  label = paste("Select Policy -", st),
+                  choices = NULL
+                )
+                
+              })
+            ),
+            actionButton(
+              "calculate",
+              "Calculate",
+              class = "btn-primary"
+            ) 
+            
   ))
+)
 
 ####### Start Server ###################
 server <- function(input, output, session) {
@@ -3537,7 +3571,7 @@ server <- function(input, output, session) {
     read_cols<-c("metric","species","value", "mode","state","draw","model")
     read_cols_types<-c("c","c","d","c","c","i","c")
     all_data <- flist %>%
-      set_names(flist) %>%  # Optional: keep file names for reference
+      magrittr::set_names(flist) %>%  # Optional: keep file names for reference
       purrr::map_dfr(readr::read_csv, .id = "filename", col_select=all_of(read_cols), col_types=read_cols_types) %>% 
       dplyr::mutate(filename = stringr::str_extract(filename, "(?<=output_).+?(?=_202)")) %>% 
       dplyr::mutate(model = dplyr::case_when(model == "Lou_SQ"  ~ "SQ", TRUE ~ model)) %>% 
