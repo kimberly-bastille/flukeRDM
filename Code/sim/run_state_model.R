@@ -216,7 +216,7 @@ run_state_model <- function(state, Run_Name) {
   readr::write_csv(
     predictions_out10,
     file = here::here(paste0(
-      "output/output2_", state, "_", Run_Name, "_",
+      "output/output3_", state, "_", Run_Name, "_",
       format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv"
     ))
   )
