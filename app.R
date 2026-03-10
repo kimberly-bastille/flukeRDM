@@ -157,24 +157,29 @@ ui <- fluidPage(
   
   tabPanel( "Results",
             fluidRow(
-              lapply(states, function(st){
-                
-                selectInput(
-                  inputId = paste0("policy_", st),
-                  label = paste("Select Policy -", st),
-                  choices = NULL
+              column(
+                width = 3,
+                lapply(states, function(st){
+                  
+                  selectInput(
+                    inputId = paste0("policy_", st),
+                    label = paste("Select Policy -", st),
+                    choices = NULL
+                  )
+                }),
+                actionButton(
+                  "calculate",
+                  "Calculate",
+                  class = "btn-primary"
                 )
-                
-              })
-            ),
-            actionButton(
-              "calculate",
-              "Calculate",
-              class = "btn-primary"
-            ) 
-            
+          ),
+          
+          column(
+            width = 9,
+            DT::DTOutput("combined_table")
+          )
   ))
-)
+))
 
 ####### Start Server ###################
 server <- function(input, output, session) {
@@ -210,7 +215,62 @@ server <- function(input, output, session) {
     ticks = FALSE
   )
   
+  # Results tab
+  ###########################################################
   
+  ## 
+  lapply(states, function(st){
+    
+    state_files <- file_df |> filter(state == st)
+    
+    choices <- c(
+      "No file selected" = "",
+      setNames(state_files$file, state_files$display)
+    )
+    
+    updateSelectInput(
+      session,
+      paste0("policy_", st),
+      choices = choices,
+      selected = ""
+    )
+  })
+  
+  selected_files <- eventReactive(input$calculate, {
+    
+    selected <- sapply(states, function(st){
+      input[[paste0("policy_", st)]]
+    })
+    
+    # Remove empty selections
+    selected <- selected[selected != ""]
+    
+    return(selected)
+    
+  })
+  
+  combined_data <- eventReactive(input$calculate, {
+    
+    files <- selected_files()
+    
+    files |>
+      lapply(function(f){
+        read.csv(file.path("output", f))
+      }) |>
+      dplyr::bind_rows()
+    
+  })
+  
+  output$combined_table <- DT::renderDT({
+    
+    req(input$calculate)
+    
+    combined_data()
+    
+  })
+    
+  #})
+  #####################################################################
   
   Run_Name <- function(){
     if(stringr::str_detect(input$Run_Name, "_")){
@@ -289,6 +349,7 @@ server <- function(input, output, session) {
                    shinyjs::toggle(id = "SCUPncSeason2", anim = TRUE))
   
   #### Output$addSTATE ####
+  
   ############## MASSACHUSETTS ###########################################################
   output$addMA <- renderUI({
     if(any("MA" == input$state)){
