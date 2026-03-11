@@ -11,10 +11,10 @@ files <- list.files("output", pattern = "\\.csv$", full.names = FALSE)
 # Extract state abbreviation
 file_df <- data.frame(
   file = files,
-  state = str_extract(files, "(?<=output_)[A-Z]{2}"),
+  state = stringr::str_extract(files, "(?<=output_)[A-Z]{2}"),
   display = files |>
-    str_remove("^output_") |>
-    str_remove("_[0-9]{8}_[0-9]{6}\\.csv$")
+    stringr::str_remove("^output_") |>
+    stringr::str_remove("_[0-9]{8}_[0-9]{6}\\.csv$")
 )
 
 states <- c("MA","RI","CT","NY","NJ","DE","MD","VA","NC")
@@ -176,6 +176,7 @@ ui <- fluidPage(
           
           column(
             width = 9,
+            tableOutput("coastwide_keep"),
             DT::DTOutput("combined_table")
           )
   ))
@@ -225,6 +226,7 @@ server <- function(input, output, session) {
     
     choices <- c(
       "No file selected" = "",
+      "No file (reset selection)" = "none",
       setNames(state_files$file, state_files$display)
     )
     
@@ -238,14 +240,13 @@ server <- function(input, output, session) {
   
   selected_files <- eventReactive(input$calculate, {
     
-    selected <- sapply(states, function(st){
+    selected_files <- sapply(states, function(st){
       input[[paste0("policy_", st)]]
     })
     
-    # Remove empty selections
-    selected <- selected[selected != ""]
+    selected_files <- selected_files[selected_files != "" & selected_files != "none"]
     
-    return(selected)
+    return(selected_files)
     
   })
   
@@ -261,6 +262,66 @@ server <- function(input, output, session) {
     
   })
   
+  sq_data <- eventReactive(input$calculate, {
+    
+    selected_states <- states[sapply(states, function(st){
+      input[[paste0("policy_", st)]] != "" &
+        input[[paste0("policy_", st)]] != "none"
+    })]
+    
+    sq_files <- list.files("output", pattern = "SQ.*\\.csv$", full.names = TRUE)
+    
+    sq_df <- data.frame(file = sq_files) %>%
+      mutate(
+        filename = basename(file),
+        state = stringr::str_extract(filename, "(?<=output_)[A-Z]{2}")
+      ) %>%
+      filter(state %in% selected_states)
+    
+    bind_rows(
+      lapply(sq_df$file, read.csv)
+    )
+    
+    
+  })
+
+  
+  coastwide_keep <- reactive({
+    
+    req(combined_data(), sq_data())
+    
+    # Policy totals by draw
+    policy_draws <- combined_data() %>%
+      dplyr::filter(metric == "keep_weight") %>%
+      group_by(draw, species, mode) %>%
+      summarise(policy_total = sum(value), .groups = "drop")
+    
+    # SQ totals by draw
+    sq_draws <- sq_data() %>%
+      dplyr::filter(metric == "keep_weight") %>%
+      group_by(draw, species, mode) %>%
+      summarise(sq_total = sum(value), .groups = "drop")
+    
+    # Join and calculate percent change per draw
+    draw_comparison <- policy_draws %>%
+      left_join(sq_draws, by = c("draw","species", "mode")) %>%
+      mutate(
+        pct_change_draw = (policy_total - sq_total) / sq_total * 100
+      )
+    
+    # Median across draws
+    draw_comparison %>%
+      group_by(species, mode) %>%
+      summarise(
+        policy_median = median(policy_total),
+        #sq_median = median(sq_total),
+        pct_change = median(pct_change_draw),
+        .groups = "drop"
+      )
+    
+  })
+    
+  
   output$combined_table <- DT::renderDT({
     
     req(input$calculate)
@@ -268,7 +329,12 @@ server <- function(input, output, session) {
     combined_data()
     
   })
+  
+  output$coastwide_keep <- renderTable({
     
+    coastwide_keep()
+    
+  })
   #})
   #####################################################################
   
