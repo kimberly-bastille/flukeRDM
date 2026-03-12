@@ -226,7 +226,7 @@ server <- function(input, output, session) {
     
     choices <- c(
       "No file selected" = "",
-      "No file (reset selection)" = "none",
+      "No file selected " = "none",
       setNames(state_files$file, state_files$display)
     )
     
@@ -313,7 +313,7 @@ server <- function(input, output, session) {
     draw_comparison %>%
       group_by(species, mode) %>%
       summarise(
-        policy_median = median(policy_total),
+        harvest_weight_median = median(policy_total),
         #sq_median = median(sq_total),
         pct_change = median(pct_change_draw),
         .groups = "drop"
