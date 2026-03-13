@@ -177,6 +177,7 @@ ui <- fluidPage(
           column(
             width = 9,
             tableOutput("coastwide_keep"),
+            tableOutput("coastwide_cv"),
             DT::DTOutput("combined_table")
           )
   ))
@@ -321,7 +322,26 @@ server <- function(input, output, session) {
     
   })
     
-  
+  coastwide_cv <- reactive({
+    
+    req(combined_data())
+    
+    # Policy totals by draw
+    CV_draws <- combined_data() %>%
+      dplyr::filter(metric == "CV") %>%
+      group_by(draw, mode) %>%
+      summarise(cv_total = sum(value), .groups = "drop")
+
+    # Median across draws
+    CV_draws %>%
+      group_by( mode) %>%
+      summarise(
+        cv_median = median(cv_total),
+        #sq_median = median(sq_total),
+        .groups = "drop"
+      )
+    
+  })
   output$combined_table <- DT::renderDT({
     
     req(input$calculate)
@@ -333,6 +353,12 @@ server <- function(input, output, session) {
   output$coastwide_keep <- renderTable({
     
     coastwide_keep()
+    
+  })
+  
+  output$coastwide_cv <- renderTable({
+    
+    coastwide_cv()
     
   })
   #})
