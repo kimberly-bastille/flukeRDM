@@ -1,0 +1,80 @@
+---
+title: "Summary of Feedback on Decision Support Tool"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Overview
+- **Total Respondents**: 5 (SFBSBS), 8 (Groundfish)
+
+Overall positive feedback with identified issues/suggestions coming from 5 categories. 
+
+
+## Shiny Display
+### Issues
+   - Not being able to see metrics without download (SFBSBS)
+   - Graphs hard to read/interpret (SFBSBS)
+   - First plots not helpful (SFBSBS)
+   - Run display message not helpful because it lingered (SFBSBS)
+   - Calculating medians (SFBSBS)
+
+
+### Suggestions
+   - Option to select spp, states, runs to compare (SFBSBS)
+   - Better sorting (SFBSBS)
+   - Have Harv, disc, CV available on app as well as % change (SFBSBS)
+   - Date slider - easier as a calendar dropdown (SFBSBS)
+   - Have an all modes combined for removing mode separation (SFBSBS)
+   - Incorporate presentation on the level of uncertainty in season changes that was give to TC (SFBSBS)
+
+
+## Timing
+
+### Issues 
+- Data/Timeline Limitations (Both)
+- RAP input rejected (Groundfish)
+- Difference between SQ presented in Fall and that in the tool (SFBSBS)
+- Things kept changing (Both)
+
+### Suggestions
+- Conduct User Survey earlier 
+- Allow time for corrections once the model is in use (SFBSBS)
+- Make tool available earlier next year (SFBSBS)
+
+## Model/Data
+### Issues
+- One year of data input (Groundfish)
+- Correct years included (SFBSBS)
+- North Carolina data (SFBSBS)
+- Opening closed MRIP waves (SFBSBS)
+
+## Communication/Documentation
+### Issues 
+- Tedious and confusing having to download all data (SFBSBS)
+- The way changes were presented to managers (SFBSBS)
+- Results made little sense (SFBSBS)
+- Assumption that folks had used the tool before (SFBSBS)
+- Not enough information provided to make informed decision (SFBSBS)
+
+### Suggestions
+- Better testing/documentation (Both)
+- User guide for onbaording new folks (SFBSBS)
+- Information about output file structure (SFBSBS)
+
+## Azure
+### Issues
+- Login difficulties (Both)
+
+
+
+## Plan to address
+Of the 19 issues and 12 Suggestions collected from survey most already had plan for addressing. 
+
+### New Ideas
+- User guide 
+- Date slider as dropdown calendar 
+- Incorporate presentation on the level of uncertainty in season changes that was give to TC
+- Information about output file structure*
+- Run display message
+- Azure login difficulties
+
