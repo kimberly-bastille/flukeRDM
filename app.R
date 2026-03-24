@@ -177,9 +177,11 @@ ui <- fluidPage(
           column(
             width = 9,
             tableOutput("coastwide_keep"),
-            tableOutput("coastwide_cv"),
-            #tableOutput("coastwide_discards"),
-            #tableOutput("coastwide_trips"),
+            fluidRow(
+              column(width = 4, tableOutput("coastwide_cv")),
+              column(width = 4, tableOutput("coastwide_trips"))
+            ),
+            tableOutput("coastwide_discards"),
             DT::DTOutput("combined_table")
           )
   ))
@@ -261,7 +263,7 @@ server <- function(input, output, session) {
       lapply(function(f){
         read.csv(file.path("output", f))
       }) |>
-      dplyr::bind_rows()
+      dplyr::bind_rows() 
     
   })
   
@@ -279,8 +281,8 @@ server <- function(input, output, session) {
         filename = basename(file),
         state = stringr::str_extract(filename, "(?<=output_)[A-Z]{2}")
       ) %>%
-      filter(state %in% selected_states)
-    
+      filter(state %in% selected_states) #%>% 
+
     bind_rows(
       lapply(sq_df$file, read.csv)
     )
@@ -295,15 +297,31 @@ server <- function(input, output, session) {
     
     # Policy totals by draw
     policy_draws <- combined_data() %>%
+      filter( case_when(
+        state %in% c("MA", "CT", "NY", "NJ", "DE", "VA", "NC") & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "MD" & model != "Lou_SQ" &draw %in% c(20, 21) ~ FALSE,
+        state == "MD" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "RI" & model != "Lou_SQ" & draw %in% c(76) ~ FALSE,
+        state == "RI" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        TRUE ~ TRUE)) %>% 
       dplyr::filter(metric == "keep_weight") %>%
       group_by(draw, species, mode) %>%
-      summarise(policy_total = sum(value), .groups = "drop")
+      summarise(policy_total = sum(value), .groups = "drop") 
+      
     
     # SQ totals by draw
     sq_draws <- sq_data() %>%
+      filter( case_when(
+        state %in% c("MA", "CT", "NY", "NJ", "DE", "VA", "NC") & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "MD" & model != "Lou_SQ" &draw %in% c(20, 21) ~ FALSE,
+        state == "MD" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "RI" & model != "Lou_SQ" & draw %in% c(76) ~ FALSE,
+        state == "RI" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        TRUE ~ TRUE)) %>% 
       dplyr::filter(metric == "keep_weight") %>%
       group_by(draw, species, mode) %>%
-      summarise(sq_total = sum(value), .groups = "drop")
+      summarise(sq_total = sum(value), .groups = "drop")  
+
     
     # Join and calculate percent change per draw
     draw_comparison <- policy_draws %>%
@@ -316,9 +334,9 @@ server <- function(input, output, session) {
     draw_comparison %>%
       group_by(species, mode) %>%
       summarise(
-        harvest_weight_median = median(policy_total),
+        `Median Harvest Weight (lbs)` = median(policy_total),
         #sq_median = median(sq_total),
-        pct_change = median(pct_change_draw),
+        `Percent Change from SQ` = median(pct_change_draw),
         .groups = "drop"
       )
     
@@ -330,6 +348,13 @@ server <- function(input, output, session) {
     
     # Policy totals by draw
     CV_draws <- combined_data() %>%
+      filter( case_when(
+        state %in% c("MA", "CT", "NY", "NJ", "DE", "VA", "NC") & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "MD" & model != "Lou_SQ" &draw %in% c(20, 21) ~ FALSE,
+        state == "MD" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "RI" & model != "Lou_SQ" & draw %in% c(76) ~ FALSE,
+        state == "RI" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        TRUE ~ TRUE)) %>% 
       dplyr::filter(metric == "CV") %>%
       group_by(draw, mode) %>%
       summarise(cv_total = sum(value), .groups = "drop")
@@ -338,8 +363,72 @@ server <- function(input, output, session) {
     CV_draws %>%
       group_by( mode) %>%
       summarise(
-        cv_median = median(cv_total),
+        `Angler Satisfaction ($)` = median(cv_total),
         #sq_median = median(sq_total),
+        .groups = "drop"
+      )
+    
+  })
+  
+  
+  coastwide_discards <- reactive({
+    
+    req(combined_data(), sq_data())
+    
+    # Policy totals by draw
+    policy_draws <- combined_data() %>%
+      filter( case_when(
+        state %in% c("MA", "CT", "NY", "NJ", "DE", "VA", "NC") & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "MD" & model != "Lou_SQ" &draw %in% c(20, 21) ~ FALSE,
+        state == "MD" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "RI" & model != "Lou_SQ" & draw %in% c(76) ~ FALSE,
+        state == "RI" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        TRUE ~ TRUE)) %>% 
+      dplyr::filter(metric %in%  c("release_weight", "discmort_weight")) %>%
+      group_by(draw, species, mode, metric) %>%
+      summarise(total_value = sum(value, na.rm = TRUE), .groups = "drop")
+    
+    
+    # Median across draws, pivot to one column per metric
+    policy_draws %>%
+      group_by(species, mode, metric) %>%
+      summarise(
+        median_value = median(total_value, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+      tidyr::pivot_wider(
+        names_from  = metric,
+        values_from = median_value,
+        names_glue  = "{metric}_median"
+      ) %>%
+      dplyr::rename(
+        `Median Discard weight (lbs)`      = release_weight_median,
+        `Median Dead discard weight (lbs)` = discmort_weight_median
+      ) %>%
+      dplyr::arrange(species, mode)
+    
+  })
+  
+  
+  coastwide_trips <- reactive({
+    
+    req(combined_data())
+    
+    combined_data() %>%
+      filter(case_when(
+        state %in% c("MA", "CT", "NY", "NJ", "DE", "VA", "NC") & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "MD" & model != "Lou_SQ" & draw %in% c(20, 21) ~ FALSE,
+        state == "MD" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        state == "RI" & model != "Lou_SQ" & draw %in% c(76) ~ FALSE,
+        state == "RI" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+        TRUE ~ TRUE
+      )) %>%
+      dplyr::filter(metric == "predicted_trips") %>%
+      group_by(draw, mode) %>%
+      summarise(trips_total = sum(value, na.rm = TRUE), .groups = "drop") %>%
+      group_by(mode) %>%
+      summarise(
+        `Predicted trips` = median(trips_total, na.rm = TRUE),
         .groups = "drop"
       )
     
@@ -362,6 +451,18 @@ server <- function(input, output, session) {
   output$coastwide_cv <- renderTable({
     
     coastwide_cv()
+    
+  })
+  
+  output$coastwide_discards <- renderTable({
+    
+    coastwide_discards()
+    
+  })
+  
+  output$coastwide_trips <- renderTable({
+    
+    coastwide_trips()
     
   })
   #})
