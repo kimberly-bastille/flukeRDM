@@ -178,6 +178,8 @@ ui <- fluidPage(
             width = 9,
             tableOutput("coastwide_keep"),
             tableOutput("coastwide_cv"),
+            #tableOutput("coastwide_discards"),
+            #tableOutput("coastwide_trips"),
             DT::DTOutput("combined_table")
           )
   ))
@@ -342,6 +344,7 @@ server <- function(input, output, session) {
       )
     
   })
+  
   output$combined_table <- DT::renderDT({
     
     req(input$calculate)
@@ -458,7 +461,7 @@ server <- function(input, output, session) {
                                      min = 0, max = 100, value = 5)),
                  column(5, 
                         rlang::exec(sliderInput, inputId= "SFmaFH_1_len", label = "Min Length",
-                                    min = 5, max = 25, value = 17.5, step = .5))),
+                                    min = 14, max = 21, value = 17.5, step = .5))),
                rlang::exec(sliderInput, inputId= "SFmaPR_seas1", label ="Private Season 1", 
                            value =c(as.Date("05-24","%m-%d"),as.Date("09-23","%m-%d")), 
                            !!!date_slider_defaults),
@@ -468,7 +471,7 @@ server <- function(input, output, session) {
                                      min = 0, max = 100, value = 5)),
                  column(5, 
                         rlang::exec(sliderInput, inputId= "SFmaPR_1_len", label = "Min Length",
-                                    min = 5, max = 25, value = 17.5, step = .5))),
+                                    min = 14, max = 21, value = 17.5, step = .5))),
                rlang::exec(sliderInput, inputId= "SFmaSH_seas1", label ="Shore  Season 1", 
                            value =c(as.Date("05-24","%m-%d"),as.Date("09-23","%m-%d")), 
                            !!!date_slider_defaults),
@@ -478,7 +481,7 @@ server <- function(input, output, session) {
                                      min = 0, max = 100, value = 5)),
                  column(5, 
                         rlang::exec(sliderInput, inputId= "SFmaSH_1_len", label = "Min Length",
-                                    min = 5, max = 25, value = 16.5, step = .5))),
+                                    min = 14, max = 21, value = 16.5, step = .5))),
                
                actionButton("SFMAaddSeason", "Add Season"), 
                shinyjs::hidden( div(ID = "SFmaSeason2",
@@ -491,7 +494,7 @@ server <- function(input, output, session) {
                                                           min = 0, max = 20, value = 0)), 
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SFmaFH_2_len", label ="Min Length",
-                                                         min = 3, max = 25, value = 10, step = .5))), 
+                                                         min = 14, max = 21, value = 16, step = .5))), 
                                     rlang::exec(sliderInput, inputId= "SFmaPR_seas2", label ="Private  Season 2", 
                                                 value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
                                                 !!!date_slider_defaults),
@@ -501,7 +504,7 @@ server <- function(input, output, session) {
                                                           min = 0, max = 20, value = 0)), 
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SFmaPR_2_len", label ="Min Length",
-                                                         min = 3, max = 25, value = 10, step = .5))), 
+                                                         min = 14, max = 21, value = 16, step = .5))), 
                                     rlang::exec(sliderInput, inputId= "SFmaSH_seas2", label ="Shore  Season 2", 
                                                 value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
                                                 !!!date_slider_defaults),
@@ -511,7 +514,7 @@ server <- function(input, output, session) {
                                                           min = 0, max = 20, value = 0)), 
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SFmaSH_2_len", label ="Min Length",
-                                                         min = 3, max = 25, value = 10, step = .5)))))),
+                                                         min = 14, max = 21, value = 16, step = .5)))))),
         
         column(4, 
                titlePanel("Black Sea Bass - MA"),
@@ -532,7 +535,7 @@ server <- function(input, output, session) {
                                                           min = 0, max = 100, value = 0)),
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "BSBmaFH_2_len", label ="Min Length",
-                                                         min = 5, max = 25, value = 16.5, step = .5))),
+                                                         min = 11, max = 18, value = 16.5, step = .5))),
                                     rlang::exec(sliderInput, inputId= "BSBmaPR_seas2", label ="Private  Season 2",
                                                 value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
                                                 !!!date_slider_defaults),
@@ -542,7 +545,7 @@ server <- function(input, output, session) {
                                                           min = 0, max = 100, value = 0)),
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "BSBmaPR_2_len", label ="Min Length",
-                                                         min = 5, max = 25, value = 16.5, step = .5))),
+                                                         min = 11, max = 18, value = 16.5, step = .5))),
                                     rlang::exec(sliderInput, inputId= "BSBmaSH_seas2", label ="Shore  Season 2",
                                                 value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
                                                 !!!date_slider_defaults),
@@ -552,7 +555,7 @@ server <- function(input, output, session) {
                                                           min = 0, max = 100, value = 0)),
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "BSBmaSH_2_len", label ="Min Length",
-                                                         min = 5, max = 25, value = 16.5, step = .5)))))),
+                                                         min = 11, max = 18, value = 16.5, step = .5)))))),
         
         
         
@@ -568,7 +571,7 @@ server <- function(input, output, session) {
                                      min = 0, max = 100, value = 40)),
                  column(5, 
                         rlang::exec(sliderInput, inputId= "SCUPmaFH_1_len", label = "Min Length",
-                                    min = 5, max = 25, value = 11, step = .5))),
+                                    min = 8, max = 12, value = 11, step = .5))),
                
                rlang::exec(sliderInput,inputId = "SCUPmaFH_seas2", label ="For Hire  Season 2", 
                            value =c(as.Date("07-01","%m-%d"),as.Date("12-31","%m-%d")), 
@@ -579,7 +582,7 @@ server <- function(input, output, session) {
                                      min = 0, max = 100, value = 30)),
                  column(5, 
                         rlang::exec(sliderInput, inputId= "SCUPmaFH_2_len", label = "Min Length",
-                                    min = 5, max = 25, value = 11, step = .5))), 
+                                    min = 8, max = 12, value = 11, step = .5))), 
                
                
                rlang::exec(sliderInput,inputId = "SCUPmaPR_seas1", label ="Private  Season 1", 
@@ -591,7 +594,7 @@ server <- function(input, output, session) {
                                      min = 0, max = 100, value = 30)),
                  column(5, 
                         rlang::exec(sliderInput, inputId= "SCUPmaPR_1_len", label = "Min Length",
-                                    min = 5, max = 25, value = 11, step = .5))),
+                                    min = 8, max = 12, value = 11, step = .5))),
                rlang::exec(sliderInput,inputId = "SCUPmaSH_seas1", label ="Shore  Season 1", 
                            value =c(as.Date("05-01","%m-%d"),as.Date("12-31","%m-%d")), 
                            !!!date_slider_defaults),
@@ -601,7 +604,7 @@ server <- function(input, output, session) {
                                      min = 0, max = 100, value = 30)),
                  column(5, 
                         rlang::exec(sliderInput, inputId= "SCUPmaSH_1_len", label = "Min Length",
-                                    min = 5, max = 25, value = 9.5, step = .5))),
+                                    min = 11, max = 18, value = 9.5, step = .5))),
                
                actionButton("SCUPMAaddSeason", "Add Season"), 
                shinyjs::hidden( div(ID = "SCUPmaSeason2",
@@ -614,7 +617,7 @@ server <- function(input, output, session) {
                                                           min = 0, max = 20, value = 0)), 
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SCUPmaFH_3_len", label ="Min Length",
-                                                         min = 3, max = 25, value = 10, step = .5))), 
+                                                         min = 8, max = 12, value = 10, step = .5))), 
                                     rlang::exec(sliderInput,inputId = "SCUPmaPR_seas2", label ="Private  Season 2", 
                                                 value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
                                                 !!!date_slider_defaults),
@@ -624,10 +627,8 @@ server <- function(input, output, session) {
                                                           min = 0, max = 20, value = 0)), 
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SCUPmaPR_2_len", label ="Min Length",
-                                                         min = 3, max = 25, value = 10, step = .5))), 
+                                                         min = 8, max = 12, value = 10, step = .5))), 
                                     rlang::exec(sliderInput,inputId = "SCUPmaSH_seas2", label ="Shore  Season 2", 
-                                                
-                                                
                                                 value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
                                                 !!!date_slider_defaults),
                                     fluidRow(
@@ -636,7 +637,7 @@ server <- function(input, output, session) {
                                                           min = 0, max = 20, value = 0)), 
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SCUPmaSH_2_len", label ="Min Length",
-                                                         min = 3, max = 25, value = 10, step = .5)))))))
+                                                         min = 8, max = 12, value = 10, step = .5)))))))
     }})
   
   
@@ -655,7 +656,7 @@ server <- function(input, output, session) {
                                                             min = 0, max = 100, value = 5)),
                                         column(6,
                                                rlang::exec(sliderInput, inputId= "SFma_1_len", label ="Min Length",
-                                                           min = 5, max = 25, value = 16.5, step = .5)))), 
+                                                           min = 14, max = 21, value = 16.5, step = .5)))), 
            "Separated By Mode" = div(rlang::exec(sliderInput,inputId = "SFmaFH_seas1", label ="For Hire  Season 1",
                                                  value=c(as.Date("05-21","%m-%d"),as.Date("09-29","%m-%d")), 
                                                  !!!date_slider_defaults),
@@ -665,7 +666,7 @@ server <- function(input, output, session) {
                                                            min = 0, max = 100, value = 5)),
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "SFmaFH_1_len", label ="Min Length",
-                                                          min = 5, max = 25, value = 16.5, step = .5))) ,
+                                                          min = 14, max = 21, value = 16.5, step = .5))) ,
                                      rlang::exec(sliderInput,inputId = "SFmaPR_seas1", label ="Private  Season 1",
                                                  value=c(as.Date("05-21","%m-%d"),as.Date("09-29","%m-%d")), 
                                                  !!!date_slider_defaults),
@@ -675,10 +676,8 @@ server <- function(input, output, session) {
                                                            min = 0, max = 100, value = 5)),
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "SFmaPR_1_len", label ="Min Length",
-                                                          min = 5, max = 25, value = 16.5, step = .5))) ,
+                                                          min = 14, max = 21, value = 16.5, step = .5))) ,
                                      rlang::exec(sliderInput,inputId = "SFmaSH_seas1", label ="Shore  Season 1",
-                                                 
-                                                 
                                                  value=c(as.Date("05-21","%m-%d"),as.Date("09-29","%m-%d")), 
                                                  !!!date_slider_defaults),
                                      fluidRow(
@@ -687,7 +686,7 @@ server <- function(input, output, session) {
                                                            min = 0, max = 100, value = 5)),
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "SFmaSH_1_len", label ="Min Length",
-                                                          min = 5, max = 25, value = 16.5, step = .5)))))
+                                                          min = 14, max = 21, value = 16.5, step = .5)))))
   })
   
   
@@ -708,7 +707,7 @@ server <- function(input, output, session) {
                                                             min = 0, max = 20, value = 4)), 
                                         column(6,
                                                rlang::exec(sliderInput, inputId= "BSBma_1_len", label ="Min Length",
-                                                           min = 3, max = 25, value = 16.5, step = .5)))),
+                                                           min = 11, max = 18, value = 16.5, step = .5)))),
            
            
            "Separated By Mode" = div(rlang::exec(sliderInput,inputId = "BSBmaFH_seas1", label =" For Hire  Season 1", 
@@ -720,7 +719,7 @@ server <- function(input, output, session) {
                                                            min = 0, max = 20, value = 4)), 
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "BSBmaFH_1_len", label ="Min Length",
-                                                          min = 3, max = 25, value = 16.5, step = .5))),
+                                                          min = 11, max = 18, value = 16.5, step = .5))),
                                      rlang::exec(sliderInput,inputId = "BSBmaPR_seas1", label ="Private/Rental  Season 1",
                                                  
                                                  
@@ -732,11 +731,9 @@ server <- function(input, output, session) {
                                                            min = 0, max = 20, value = 4)), 
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "BSBmaPR_1_len", label ="Min Length",
-                                                          min = 3, max = 25, value = 16.5, step = .5))),
+                                                          min = 11, max = 18, value = 16.5, step = .5))),
                                      rlang::exec(sliderInput,inputId = "BSBmaSH_seas1", label ="Shore  Season 1",
-                                                 
-                                                 
-                                                 value=c(as.Date("05-18","%m-%d"),as.Date("09-03","%m-%d")), 
+                                                value=c(as.Date("05-18","%m-%d"),as.Date("09-03","%m-%d")), 
                                                  !!!date_slider_defaults),
                                      fluidRow(
                                        column(4,
@@ -744,7 +741,7 @@ server <- function(input, output, session) {
                                                            min = 0, max = 20, value = 4)), 
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "BSBmaSH_1_len", label ="Min Length",
-                                                          min = 3, max = 25, value = 16.5, step = .5)))))
+                                                          min = 11, max = 18, value = 16.5, step = .5)))))
     
   })
   
