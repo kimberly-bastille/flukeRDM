@@ -17,6 +17,7 @@ file_df <- data.frame(
     stringr::str_remove("_[0-9]{8}_[0-9]{6}\\.csv$")
 )
 
+#List of states
 states <- c("MA","RI","CT","NY","NJ","DE","MD","VA","NC")
 ########################################################################
 
