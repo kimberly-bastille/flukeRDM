@@ -182,8 +182,8 @@ ui <- fluidPage(
               column(width = 4, tableOutput("coastwide_cv")),
               column(width = 4, tableOutput("coastwide_trips"))
             ),
-            tableOutput("coastwide_discards"),
-            DT::DTOutput("combined_table")
+            tableOutput("coastwide_discards")#,
+            #DT::DTOutput("combined_table")
           )
   ))
 ))
@@ -257,23 +257,28 @@ server <- function(input, output, session) {
   })
   
   combined_data <- eventReactive(input$calculate, {
-    
     files <- selected_files()
     
     files |>
       lapply(function(f){
-        read.csv(file.path("output", f))
+        read.csv(file.path("output", f)) %>%
+          dplyr::mutate(
+            model = if_else(model == "Lou_SQ", "SQ", model),
+            # STANDARDIZE METRICS HERE
+            metric = case_when(
+              metric == "change_CS" ~ "CV",
+              metric == "n_trips_alt" ~ "predicted_trips",
+              TRUE ~ metric
+            )
+          )
       }) |>
       dplyr::bind_rows() 
-    
   })
   
   
   sq_data <- eventReactive(input$calculate, {
-    
     selected_states <- states[sapply(states, function(st){
-      input[[paste0("policy_", st)]] != "" &
-        input[[paste0("policy_", st)]] != "none"
+      input[[paste0("policy_", st)]] != "" & input[[paste0("policy_", st)]] != "none"
     })]
     
     sq_files <- list.files("output", pattern = "SQ.*\\.csv$", full.names = TRUE)
@@ -292,7 +297,15 @@ server <- function(input, output, session) {
       lapply(sq_df$file, function(f) {
         readr::read_csv(f, col_select = all_of(read_cols), 
                         col_types = read_cols_types, show_col_types = FALSE) %>%
-          dplyr::mutate(model = dplyr::case_when(model == "Lou_SQ" ~ "SQ", TRUE ~ model))
+          dplyr::mutate(
+            model = if_else(model == "Lou_SQ", "SQ", model),
+            # STANDARDIZE METRICS HERE
+            metric = case_when(
+              metric == "change_CS" ~ "CV",
+              metric == "n_trips_alt" ~ "predicted_trips",
+              TRUE ~ metric
+            )
+          )
       })
     )
   })
@@ -335,12 +348,15 @@ server <- function(input, output, session) {
         pct_change_draw = if_else(sq_total == 0, 0, (policy_total - sq_total) / sq_total * 100)
       )
     
-    # Median across draws
+    # Median across draws with custom formatting
     draw_comparison %>%
       group_by(species, mode) %>%
       summarise(
-        `Median Harvest Weight (lbs)` = median(policy_total, na.rm = TRUE),
-        `Percent Change from SQ` = median(pct_change_draw, na.rm = TRUE),
+        # Use round(..., 0) to remove decimals and round to the nearest whole number
+        `Median Harvest Weight (lbs)` = format(round(median(policy_total, na.rm = TRUE), 0), big.mark=","),
+        # 2. Use sprintf() to force 2 decimal places and add the "%" sign
+        `Percent Change from SQ` = sprintf("%.2f%%", median(pct_change_draw, na.rm = TRUE)),
+        
         .groups = "drop"
       )
   })
@@ -366,7 +382,7 @@ server <- function(input, output, session) {
     CV_draws %>%
       group_by( mode) %>%
       summarise(
-        `Angler Satisfaction ($)` = median(cv_total),
+        `Angler Satisfaction ($)` =  format(round(median(cv_total, na.rm = TRUE), 0), big.mark=","),
         #sq_median = median(sq_total),
         .groups = "drop"
       )
@@ -408,7 +424,14 @@ server <- function(input, output, session) {
         `Median Discard weight (lbs)`      = release_weight_median,
         `Median Dead discard weight (lbs)` = discmort_weight_median
       ) %>%
-      dplyr::arrange(species, mode)
+      dplyr::arrange(species, mode) %>% 
+      group_by(species, mode) %>% 
+      summarise(
+        `Median Discard weight (lbs)`  =  format(round(median(`Median Discard weight (lbs)`, na.rm = TRUE), 0), big.mark=","),
+        `Median Dead discard weight (lbs)`  =  format(round(median(`Median Dead discard weight (lbs)`, na.rm = TRUE), 0), big.mark=","),
+        #sq_median = median(sq_total),
+        .groups = "drop"
+      )
     
   })
   
@@ -431,19 +454,19 @@ server <- function(input, output, session) {
       summarise(trips_total = sum(value, na.rm = TRUE), .groups = "drop") %>%
       group_by(mode) %>%
       summarise(
-        `Predicted trips` = median(trips_total, na.rm = TRUE),
+        `Predicted trips` = format(round(median(trips_total, na.rm = TRUE), 0), big.mark=","),
         .groups = "drop"
       )
     
   })
   
-  output$combined_table <- DT::renderDT({
-    
-    req(input$calculate)
-    
-    combined_data()
-    
-  })
+  # output$combined_table <- DT::renderDT({
+  #   
+  #   req(input$calculate)
+  #   
+  #   combined_data()
+  #   
+  # })
   
   output$coastwide_keep <- renderTable({
     
