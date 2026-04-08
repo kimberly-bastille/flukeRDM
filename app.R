@@ -268,6 +268,7 @@ server <- function(input, output, session) {
     
   })
   
+  
   sq_data <- eventReactive(input$calculate, {
     
     selected_states <- states[sapply(states, function(st){
@@ -282,65 +283,66 @@ server <- function(input, output, session) {
         filename = basename(file),
         state = stringr::str_extract(filename, "(?<=output_)[A-Z]{2}")
       ) %>%
-      filter(state %in% selected_states) #%>% 
-
+      filter(state %in% selected_states)
+    
+    read_cols <- c("metric", "species", "value", "mode", "state", "draw", "model")
+    read_cols_types <- c("c", "c", "d", "c", "c", "i", "c")
+    
     bind_rows(
-      lapply(sq_df$file, read.csv)
+      lapply(sq_df$file, function(f) {
+        readr::read_csv(f, col_select = all_of(read_cols), 
+                        col_types = read_cols_types, show_col_types = FALSE) %>%
+          dplyr::mutate(model = dplyr::case_when(model == "Lou_SQ" ~ "SQ", TRUE ~ model))
+      })
     )
-    
-    
   })
 
   
   coastwide_keep <- reactive({
-    
     req(combined_data(), sq_data())
     
-    # Policy totals by draw
+    # Standardize filter conditions to check for "SQ" instead of "Lou_SQ" 
+    # because the model name is mutated in the sq_data() reactive
+    filter_draws <- function(df) {
+      df %>%
+        filter(case_when(
+          state %in% c("MA", "CT", "NY", "NJ", "DE", "VA", "NC") & draw %in% c(20, 21, 78) ~ FALSE,
+          state == "MD" & model != "SQ" & draw %in% c(20, 21) ~ FALSE,
+          state == "MD" & model == "SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+          state == "RI" & model != "SQ" & draw %in% c(76) ~ FALSE,
+          state == "RI" & model == "SQ" & draw %in% c(20, 21, 78) ~ FALSE,
+          TRUE ~ TRUE
+        ))
+    }
+    
     policy_draws <- combined_data() %>%
-      filter( case_when(
-        state %in% c("MA", "CT", "NY", "NJ", "DE", "VA", "NC") & draw %in% c(20, 21, 78) ~ FALSE,
-        state == "MD" & model != "Lou_SQ" &draw %in% c(20, 21) ~ FALSE,
-        state == "MD" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
-        state == "RI" & model != "Lou_SQ" & draw %in% c(76) ~ FALSE,
-        state == "RI" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
-        TRUE ~ TRUE)) %>% 
+      filter_draws() %>%
       dplyr::filter(metric == "keep_weight") %>%
       group_by(draw, species, mode) %>%
       summarise(policy_total = sum(value), .groups = "drop") 
-      
     
-    # SQ totals by draw
     sq_draws <- sq_data() %>%
-      filter( case_when(
-        state %in% c("MA", "CT", "NY", "NJ", "DE", "VA", "NC") & draw %in% c(20, 21, 78) ~ FALSE,
-        state == "MD" & model != "Lou_SQ" &draw %in% c(20, 21) ~ FALSE,
-        state == "MD" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
-        state == "RI" & model != "Lou_SQ" & draw %in% c(76) ~ FALSE,
-        state == "RI" & model == "Lou_SQ" & draw %in% c(20, 21, 78) ~ FALSE,
-        TRUE ~ TRUE)) %>% 
+      filter_draws() %>%
       dplyr::filter(metric == "keep_weight") %>%
       group_by(draw, species, mode) %>%
       summarise(sq_total = sum(value), .groups = "drop")  
-
     
     # Join and calculate percent change per draw
     draw_comparison <- policy_draws %>%
-      left_join(sq_draws, by = c("draw","species", "mode")) %>%
+      left_join(sq_draws, by = c("draw", "species", "mode")) %>%
       mutate(
-        pct_change_draw = (policy_total - sq_total) / sq_total * 100
+        # Handle division by zero: if baseline is 0, set change to 0%
+        pct_change_draw = if_else(sq_total == 0, 0, (policy_total - sq_total) / sq_total * 100)
       )
     
     # Median across draws
     draw_comparison %>%
       group_by(species, mode) %>%
       summarise(
-        `Median Harvest Weight (lbs)` = median(policy_total),
-        #sq_median = median(sq_total),
-        `Percent Change from SQ` = median(pct_change_draw),
+        `Median Harvest Weight (lbs)` = median(policy_total, na.rm = TRUE),
+        `Percent Change from SQ` = median(pct_change_draw, na.rm = TRUE),
         .groups = "drop"
       )
-    
   })
     
   coastwide_cv <- reactive({
