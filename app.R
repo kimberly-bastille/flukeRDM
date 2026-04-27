@@ -428,7 +428,7 @@ server <- function(input, output, session) {
   shinyjs::onclick("BSBRIaddSeason", shinyjs::toggle(id = "BSBriSeason3", anim = TRUE))
   shinyjs::onclick("SCUPRIaddSeason",shinyjs::toggle(id = "SCUPriSeason2",anim = TRUE))
   shinyjs::onclick("SFCTaddSeason",  shinyjs::toggle(id = "SFctSeason3",  anim = TRUE))
-  shinyjs::onclick("BSBCTaddSeason", shinyjs::toggle(id = "BSBctSeason2", anim = TRUE))
+  shinyjs::onclick("BSBCTaddSeason", shinyjs::toggle(id = "BSBctSeason3", anim = TRUE))
   shinyjs::onclick("SCUPCTaddSeason",shinyjs::toggle(id = "SCUPctSeason2",anim = TRUE))
   shinyjs::onclick("SFNYaddSeason",  shinyjs::toggle(id = "SFnySeason3",  anim = TRUE))
   shinyjs::onclick("BSBNYaddSeason", shinyjs::toggle(id = "BSBnySeason3", anim = TRUE))
@@ -870,70 +870,6 @@ server <- function(input, output, session) {
                                       column(6, rlang::exec(sliderInput, inputId= "SCUPriSH_2_len", label ="Min Length", min = 8, max = 12, value = 10, step = .5)))))))
     }})
   
-  # output$SFriMode <- renderUI({
-  #   if (is.null(input$SF_RI_input_type)) return()
-  #   switch(input$SF_RI_input_type, 
-  #          "All Modes Combined" = div(dateRangeInput(inputId = "SFri_seas1", label =" Season 1",
-  #                                                    start = as.Date("2027-04-01"),
-  #                                                    end   = as.Date("2027-12-31"),
-  #                                                    min   = as.Date("2027-01-01"),
-  #                                                    max   = as.Date("2027-12-31"),
-  #                                                    format = "yyyy-mm-dd"),
-  #                                     fluidRow(
-  #                                       column(4, numericInput(inputId = "SFri_1_bag", label ="Bag Limit", min = 0, max = 100, value = 6)),
-  #                                       column(6, rlang::exec(sliderInput, inputId= "SFri_1_len", label ="Min Length", min = 14, max = 21, value = 19, step = .5)))), 
-  #          "Separated By Mode" = div(dateRangeInput(inputId = "SFriFH_seas1", label ="For Hire Season 1",
-  #                                                   start = as.Date("2027-04-01"),
-  #                                                   end   = as.Date("2027-12-31"),
-  #                                                   min   = as.Date("2027-01-01"),
-  #                                                   max   = as.Date("2027-12-31"),
-  #                                                   format = "yyyy-mm-dd"),
-  #                                    fluidRow(
-  #                                      column(4, numericInput(inputId = "SFriFH_1_bag", label ="Bag Limit", min = 0, max = 100, value = 6)),
-  #                                      column(6, rlang::exec(sliderInput, inputId= "SFriFH_1_len", label ="Min Length", min = 14, max = 21, value = 19, step = .5))),
-  #                                    dateRangeInput(inputId = "SFriPR_seas1", label ="Private Season 1",
-  #                                                   start = as.Date("2027-04-01"),
-  #                                                   end   = as.Date("2027-12-31"),
-  #                                                   min   = as.Date("2027-01-01"),
-  #                                                   max   = as.Date("2027-12-31"),
-  #                                                   format = "yyyy-mm-dd"),
-  #                                    fluidRow(
-  #                                      column(4, numericInput(inputId = "SFriPR_1_bag", label ="Bag Limit", min = 0, max = 100, value = 6)),
-  #                                      column(6, rlang::exec(sliderInput, inputId= "SFriPR_1_len", label ="Min Length", min = 5, max = 25, value = 19, step = .5))),
-  #                                    dateRangeInput(inputId = "SFriSH_seas1", label ="Shore Season 1",
-  #                                                   start = as.Date("2027-04-01"),
-  #                                                   end   = as.Date("2027-12-31"),
-  #                                                   min   = as.Date("2027-01-01"),
-  #                                                   max   = as.Date("2027-12-31"),
-  #                                                   format = "yyyy-mm-dd"),
-  #                                    fluidRow(
-  #                                      column(4, numericInput(inputId = "SFriSH_1_bag", label ="Bag Limit", min = 0, max = 100, value = 6)),
-  #                                      column(6, rlang::exec(sliderInput, inputId= "SFriSH_1_len", label ="Min Length", min = 14, max = 21, value = 19, step = .5)))))
-  # })
-  # 
-
-  output$addCT <- renderUI({ if(any("CT" == input$state)){
-    # ... (unchanged from original)
-  }})
-  output$addNY <- renderUI({ if(any("NY" == input$state)){
-    # ... (unchanged from original)
-  }})
-  output$addNJ <- renderUI({ if(any("NJ" == input$state)){
-    # ... (unchanged from original)
-  }})
-  output$addDE <- renderUI({ if(any("DE" == input$state)){
-    # ... (unchanged from original)
-  }})
-  output$addMD <- renderUI({ if(any("MD" == input$state)){
-    # ... (unchanged from original)
-  }})
-  output$addVA <- renderUI({ if(any("VA" == input$state)){
-    # ... (unchanged from original)
-  }})
-  output$addNC <- renderUI({ if(any("NC" == input$state)){
-    # ... (unchanged from original)
-  }})
-
   
   ############# RI Breakout by mode ######################################
   output$SFriMode <- renderUI({
@@ -993,11 +929,12 @@ server <- function(input, output, session) {
                
                actionButton("SFCTaddSeason", "Add Season"), 
                shinyjs::hidden( div(ID = "SFctSeason3",
-                                    rlang::exec(sliderInput,inputId = "SFctFH_seas3", label ="For Hire  Season 3",
-                                                
-                                                
-                                                value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
-                                                !!!date_slider_defaults),
+                                    dateRangeInput(inputId = "SFctFH_seas3", label ="For Hire Season 3",
+                                                   start = as.Date("2027-12-31"),
+                                                   end   = as.Date("2027-12-31"),
+                                                   min   = as.Date("2027-01-01"),
+                                                   max   = as.Date("2027-12-31"),
+                                                   format = "yyyy-mm-dd"),
                                     fluidRow(
                                       column(4,
                                              numericInput(inputId = "SFctFH_3_bag", label ="Bag Limit",
@@ -1005,11 +942,12 @@ server <- function(input, output, session) {
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SFctFH_3_len", label ="Min Length",
                                                          min = 14, max = 21, value = 18.5, step = .5))), 
-                                    rlang::exec(sliderInput,inputId = "SFctPR_seas3", label ="Private  Season 3",
-                                                
-                                                
-                                                value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
-                                                !!!date_slider_defaults),
+                                    dateRangeInput(inputId = "SFctPR_seas3", label ="Private Season 3",
+                                                   start = as.Date("2027-12-31"),
+                                                   end   = as.Date("2027-12-31"),
+                                                   min   = as.Date("2027-01-01"),
+                                                   max   = as.Date("2027-12-31"),
+                                                   format = "yyyy-mm-dd"),
                                     fluidRow(
                                       column(4,
                                              numericInput(inputId = "SFctPR_3_bag", label ="Bag Limit",
@@ -1017,11 +955,12 @@ server <- function(input, output, session) {
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SFctPR_3_len", label ="Min Length",
                                                          min = 14, max = 21, value = 18.5, step = .5))), 
-                                    rlang::exec(sliderInput,inputId = "SFctSH_seas3", label ="Shore  Season 3",
-                                                
-                                                
-                                                value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
-                                                !!!date_slider_defaults),
+                                    dateRangeInput(inputId = "SFctSH_seas3", label ="Shore Season 3",
+                                                   start = as.Date("2027-12-31"),
+                                                   end   = as.Date("2027-12-31"),
+                                                   min   = as.Date("2027-01-01"),
+                                                   max   = as.Date("2027-12-31"),
+                                                   format = "yyyy-mm-dd"),
                                     fluidRow(
                                       column(4,
                                              numericInput(inputId = "SFctSH_3_bag", label ="Bag Limit",
@@ -1033,11 +972,12 @@ server <- function(input, output, session) {
         column(4, 
                titlePanel("Black Sea Bass - CT"),
                
-               rlang::exec(sliderInput,inputId = "BSBctFH_seas1", label ="For Hire  Season 1",
-                           
-                           
-                           value=c(as.Date("05-18","%m-%d"),as.Date("08-31","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "BSBctFH_seas1", label ="For Hire Season 1",
+                              start = as.Date("2027-05-18"),
+                              end   = as.Date("2027-08-31"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "BSBctFH_1_bag", label ="Bag Limit",
@@ -1045,11 +985,12 @@ server <- function(input, output, session) {
                  column(6,
                         rlang::exec(sliderInput, inputId= "BSBctFH_1_len", label ="Min Length",
                                     min = 11, max = 18, value = 16, step = .5))),
-               rlang::exec(sliderInput,inputId = "BSBctFH_seas2", label ="For Hire  Season 2",
-                           
-                           
-                           value=c(as.Date("09-01","%m-%d"),as.Date("12-31","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "BSBctFH_seas2", label ="For Hire Season 2",
+                              start = as.Date("2027-09-01"),
+                              end   = as.Date("2027-12-31"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "BSBctFH_2_bag", label ="Bag Limit",
@@ -1058,11 +999,12 @@ server <- function(input, output, session) {
                         rlang::exec(sliderInput, inputId= "BSBctFH_2_len", label ="Min Length",
                                     min = 11, max = 18, value = 16, step = .5))),
                
-               rlang::exec(sliderInput,inputId = "BSBctPR_seas1", label ="Private  Season 1",
-                           
-                           
-                           value=c(as.Date("05-18","%m-%d"),as.Date("06-23","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "BSBctPR_seas1", label ="Private Season 1",
+                              start = as.Date("2027-05-18"),
+                              end   = as.Date("2027-06-23"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "BSBctPR_1_bag", label ="Bag Limit",
@@ -1071,11 +1013,12 @@ server <- function(input, output, session) {
                         rlang::exec(sliderInput, inputId= "BSBctPR_1_len", label ="Min Length",
                                     min = 11, max = 18, value = 16, step = .5))),
                
-               rlang::exec(sliderInput,inputId = "BSBctPR_seas2", label ="Private  Season 2",
-                           
-                           
-                           value=c(as.Date("07-08","%m-%d"),as.Date("11-28","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "BSBctPR_seas2", label ="Private Season 2",
+                              start = as.Date("2027-07-08"),
+                              end   = as.Date("2027-11-28"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "BSBctPR_2_bag", label ="Bag Limit",
@@ -1084,11 +1027,12 @@ server <- function(input, output, session) {
                         rlang::exec(sliderInput, inputId= "BSBctPR_2_len", label ="Min Length",
                                     min = 11, max = 18, value = 16, step = .5))),
                
-               rlang::exec(sliderInput,inputId = "BSBctSH_seas1", label ="Shore  Season 1",
-                           
-                           
-                           value=c(as.Date("05-18","%m-%d"),as.Date("06-23","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "BSBctSH_seas1", label ="Shore Season 1",
+                              start = as.Date("2027-05-18"),
+                              end   = as.Date("2027-06-23"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "BSBctSH_1_bag", label ="Bag Limit",
@@ -1097,11 +1041,12 @@ server <- function(input, output, session) {
                         rlang::exec(sliderInput, inputId= "BSBctSH_1_len", label ="Min Length",
                                     min = 11, max = 18, value = 16, step = .5))),
                
-               rlang::exec(sliderInput,inputId = "BSBctSH_seas2", label ="Shore  Season 2",
-                           
-                           
-                           value=c(as.Date("07-08","%m-%d"),as.Date("11-28","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "BSBctSH_seas2", label ="Shore Season 2",
+                              start = as.Date("2027-07-08"),
+                              end   = as.Date("2027-11-28"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "BSBctSH_2_bag", label ="Bag Limit",
@@ -1111,12 +1056,13 @@ server <- function(input, output, session) {
                                     min = 11, max = 18, value = 16, step = .5))),
                
                actionButton("BSBCTaddSeason", "Add Season"), 
-               shinyjs::hidden( div(ID = "BSBctSeason2",
-                                    rlang::exec(sliderInput,inputId = "BSBctFH_seas3", label ="For Hire  Season 3",
-                                                
-                                                
-                                                value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
-                                                !!!date_slider_defaults),
+               shinyjs::hidden( div(ID = "BSBctSeason3",
+                                    dateRangeInput(inputId = "BSBctFH_seas3", label ="For Hire Season 3",
+                                                   start = as.Date("2027-12-31"),
+                                                   end   = as.Date("2027-12-31"),
+                                                   min   = as.Date("2027-01-01"),
+                                                   max   = as.Date("2027-12-31"),
+                                                   format = "yyyy-mm-dd"),
                                     fluidRow(
                                       column(4,
                                              numericInput(inputId = "BSBctFH_3_bag", label ="Bag Limit",
@@ -1124,11 +1070,12 @@ server <- function(input, output, session) {
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "BSBctFH_3_len", label ="Min Length",
                                                          min = 11, max = 18, value = 16, step = .5))),
-                                    rlang::exec(sliderInput,inputId = "BSBctPR_seas3", label ="Private  Season 3",
-                                                
-                                                
-                                                value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
-                                                !!!date_slider_defaults),
+                                    dateRangeInput(inputId = "BSBctPR_seas3", label ="Private Season 3",
+                                                   start = as.Date("2027-12-31"),
+                                                   end   = as.Date("2027-12-31"),
+                                                   min   = as.Date("2027-01-01"),
+                                                   max   = as.Date("2027-12-31"),
+                                                   format = "yyyy-mm-dd"),
                                     fluidRow(
                                       column(4,
                                              numericInput(inputId = "BSBctPR_3_bag", label ="Bag Limit",
@@ -1136,11 +1083,12 @@ server <- function(input, output, session) {
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "BSBctPR_3_len", label ="Min Length",
                                                          min = 11, max = 18, value = 16, step = .5))),
-                                    rlang::exec(sliderInput,inputId = "BSBctSH_seas3", label ="Shore  Season 3",
-                                                
-                                                
-                                                value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
-                                                !!!date_slider_defaults),
+                                    dateRangeInput(inputId = "BSBctSH_seas3", label ="Shore Season 3",
+                                                   start = as.Date("2027-12-31"),
+                                                   end   = as.Date("2027-12-31"),
+                                                   min   = as.Date("2027-01-01"),
+                                                   max   = as.Date("2027-12-31"),
+                                                   format = "yyyy-mm-dd"),
                                     fluidRow(
                                       column(4,
                                              numericInput(inputId = "BSBctSH_3_bag", label ="Bag Limit",
@@ -1154,11 +1102,13 @@ server <- function(input, output, session) {
         
         column(4, #### SCUP 
                titlePanel("Scup - CT"),
-               rlang::exec(sliderInput,inputId = "SCUPctFH_seas1", label ="For Hire  Season 1",
-                           
-                           
-                           value =c(as.Date("05-01","%m-%d"),as.Date("08-31","%m-%d")), 
-                           !!!date_slider_defaults),
+               
+               dateRangeInput(inputId = "SCUPctFH_seas1", label ="For Hire Season 1",
+                              start = as.Date("2027-05-01"),
+                              end   = as.Date("2027-08-31"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "SCUPctFH_1_bag", label = "Bag Limit",
@@ -1167,11 +1117,12 @@ server <- function(input, output, session) {
                         rlang::exec(sliderInput, inputId= "SCUPctFH_1_len", label = "Min Length",
                                     min = 8, max = 12, value = 11, step = .5))),
                
-               rlang::exec(sliderInput,inputId = "SCUPctFH_seas2", label ="For Hire  Season 2", 
-                           
-                           
-                           value =c(as.Date("09-01","%m-%d"),as.Date("10-31","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "SCUPctFH_seas2", label ="For Hire Season 2",
+                              start = as.Date("2027-09-01"),
+                              end   = as.Date("2027-10-31"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "SCUPctFH_2_bag", label = "Bag Limit",
@@ -1179,11 +1130,12 @@ server <- function(input, output, session) {
                  column(5, 
                         rlang::exec(sliderInput, inputId= "SCUPctFH_2_len", label = "Min Length",
                                     min = 8, max = 12, value = 11, step = .5))), 
-               rlang::exec(sliderInput,inputId = "SCUPctFH_seas3", label ="For Hire  Season 3", 
-                           
-                           
-                           value =c(as.Date("11-01","%m-%d"),as.Date("12-31","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "SCUPctFH_seas3", label ="For Hire Season 3",
+                              start = as.Date("2027-11-01"),
+                              end   = as.Date("2027-12-31"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "SCUPctFH_3_bag", label = "Bag Limit",
@@ -1192,11 +1144,12 @@ server <- function(input, output, session) {
                         rlang::exec(sliderInput, inputId= "SCUPctFH_3_len", label = "Min Length",
                                     min = 8, max = 12, value = 11, step = .5))), 
                
-               rlang::exec(sliderInput,inputId = "SCUPctPR_seas1", label ="Private  Season 1", 
-                           
-                           
-                           value =c(as.Date("05-01","%m-%d"),as.Date("12-31","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "SCUPctPR_seas1", label ="Private Season 1",
+                              start = as.Date("2027-05-01"),
+                              end   = as.Date("2027-12-31"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "SCUPctPR_1_bag", label = "Bag Limit",
@@ -1204,11 +1157,12 @@ server <- function(input, output, session) {
                  column(5, 
                         rlang::exec(sliderInput, inputId= "SCUPctPR_1_len", label = "Min Length",
                                     min = 8, max = 12, value = 11, step = .5))),
-               rlang::exec(sliderInput,inputId = "SCUPctSH_seas1", label ="Shore  Season 1", 
-                           
-                           
-                           value =c(as.Date("05-01","%m-%d"),as.Date("12-31","%m-%d")), 
-                           !!!date_slider_defaults),
+               dateRangeInput(inputId = "SCUPctSH_seas1", label ="Shore Season 1",
+                              start = as.Date("2027-05-01"),
+                              end   = as.Date("2027-12-31"),
+                              min   = as.Date("2027-01-01"),
+                              max   = as.Date("2027-12-31"),
+                              format = "yyyy-mm-dd"),
                fluidRow(
                  column(4,
                         numericInput(inputId = "SCUPctSH_1_bag", label = "Bag Limit",
@@ -1219,11 +1173,12 @@ server <- function(input, output, session) {
                
                actionButton("SCUPCTaddSeason", "Add Season"), 
                shinyjs::hidden( div(ID = "SCUPctSeason2",
-                                    rlang::exec(sliderInput,inputId = "SCUPctFH_seas4", label ="For Hire  Season 4", 
-                                                
-                                                
-                                                value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
-                                                !!!date_slider_defaults),
+                                    dateRangeInput(inputId = "SCUPctFH_seas4", label ="For Hire Season 4",
+                                                   start = as.Date("2027-12-31"),
+                                                   end   = as.Date("2027-12-31"),
+                                                   min   = as.Date("2027-01-01"),
+                                                   max   = as.Date("2027-12-31"),
+                                                   format = "yyyy-mm-dd"),
                                     fluidRow(
                                       column(4,
                                              numericInput(inputId = "SCUPctFH_4_bag", label ="Bag Limit",
@@ -1231,11 +1186,12 @@ server <- function(input, output, session) {
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SCUPctFH_4_len", label ="Min Length",
                                                          min = 8, max = 12, value = 10, step = .5))), 
-                                    rlang::exec(sliderInput,inputId = "SCUPctPR_seas2", label ="Private  Season 2", 
-                                                
-                                                
-                                                value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
-                                                !!!date_slider_defaults),
+                                    dateRangeInput(inputId = "SCUPctPR_seas2", label ="Private Season 2",
+                                                   start = as.Date("2027-12-31"),
+                                                   end   = as.Date("2027-12-31"),
+                                                   min   = as.Date("2027-01-01"),
+                                                   max   = as.Date("2027-12-31"),
+                                                   format = "yyyy-mm-dd"),
                                     fluidRow(
                                       column(4,
                                              numericInput(inputId = "SCUPctPR_2_bag", label ="Bag Limit",
@@ -1243,11 +1199,12 @@ server <- function(input, output, session) {
                                       column(6,
                                              rlang::exec(sliderInput, inputId= "SCUPctPR_2_len", label ="Min Length",
                                                          min = 8, max = 12, value = 10, step = .5))), 
-                                    rlang::exec(sliderInput,inputId = "SCUPctSH_seas2", label ="Shore  Season 2", 
-                                                
-                                                
-                                                value=c(as.Date("12-31","%m-%d"),as.Date("12-31","%m-%d")), 
-                                                !!!date_slider_defaults),
+                                    dateRangeInput(inputId = "SCUPctSH_seas2", label ="Shore Season 2",
+                                                   start = as.Date("2027-12-31"),
+                                                   end   = as.Date("2027-12-31"),
+                                                   min   = as.Date("2027-01-01"),
+                                                   max   = as.Date("2027-12-31"),
+                                                   format = "yyyy-mm-dd"),
                                     fluidRow(
                                       column(4,
                                              numericInput(inputId = "SCUPctSH_2_bag", label ="Bag Limit",
@@ -1266,11 +1223,12 @@ server <- function(input, output, session) {
       return()
     
     switch(input$SF_CT_input_type, 
-           "All Modes Combined" = div(rlang::exec(sliderInput,inputId = "SFct_seas1", label =" Season 1",
-                                                  
-                                                  
-                                                  value=c(as.Date("05-04","%m-%d"),as.Date("08-01","%m-%d")), 
-                                                  !!!date_slider_defaults),
+           "All Modes Combined" = div(dateRangeInput(inputId = "SFct_seas1", label =" Season 1",
+                                                     start = as.Date("2027-05-04"),
+                                                     end   = as.Date("2027-08-01"),
+                                                     min   = as.Date("2027-01-01"),
+                                                     max   = as.Date("2027-12-31"),
+                                                     format = "yyyy-mm-dd"),
                                       fluidRow(
                                         column(4,
                                                numericInput(inputId = "SFct_1_bag", label ="Bag Limit",
@@ -1278,11 +1236,12 @@ server <- function(input, output, session) {
                                         column(6,
                                                rlang::exec(sliderInput, inputId= "SFct_1_len", label ="Min Length",
                                                            min = 14, max = 21, value = 19, step = .5))), 
-                                      rlang::exec(sliderInput,inputId = "SFct_seas2", label =" Season 2",
-                                                  
-                                                  
-                                                  value=c(as.Date("08-02","%m-%d"),as.Date("10-15","%m-%d")), 
-                                                  !!!date_slider_defaults),
+                                      dateRangeInput(inputId = "SFct_seas2", label =" Season 2",
+                                                     start = as.Date("2027-08-02"),
+                                                     end   = as.Date("2027-10-15"),
+                                                     min   = as.Date("2027-01-01"),
+                                                     max   = as.Date("2027-12-31"),
+                                                     format = "yyyy-mm-dd"),
                                       fluidRow(
                                         column(4,
                                                numericInput(inputId = "SFct_2_bag", label ="Bag Limit",
@@ -1290,11 +1249,12 @@ server <- function(input, output, session) {
                                         column(6,
                                                rlang::exec(sliderInput, inputId= "SFct_2_len", label ="Min Length",
                                                            min = 14, max = 21, value = 19.5, step = .5)))), 
-           "Separated By Mode" = div(rlang::exec(sliderInput,inputId = "SFctFH_seas1", label ="For Hire  Season 1",
-                                                 
-                                                 
-                                                 value=c(as.Date("05-04","%m-%d"),as.Date("08-01","%m-%d")), 
-                                                 !!!date_slider_defaults),
+           "Separated By Mode" = div(dateRangeInput(inputId = "SFctFH_seas1", label ="For Hire Season 1",
+                                                    start = as.Date("2027-05-04"),
+                                                    end   = as.Date("2027-08-01"),
+                                                    min   = as.Date("2027-01-01"),
+                                                    max   = as.Date("2027-12-31"),
+                                                    format = "yyyy-mm-dd"),
                                      fluidRow(
                                        column(4,
                                               numericInput(inputId = "SFctFH_1_bag", label ="Bag Limit",
@@ -1302,11 +1262,12 @@ server <- function(input, output, session) {
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "SFctFH_1_len", label ="Min Length",
                                                           min = 14, max = 21, value = 19, step = .5))) ,
-                                     rlang::exec(sliderInput,inputId = "SFctPR_seas1", label ="Private  Season 1",
-                                                 
-                                                 
-                                                 value=c(as.Date("05-04","%m-%d"),as.Date("08-01","%m-%d")), 
-                                                 !!!date_slider_defaults),
+                                     dateRangeInput(inputId = "SFctPR_seas1", label ="Private Season 1",
+                                                    start = as.Date("2027-05-04"),
+                                                    end   = as.Date("2027-08-01"),
+                                                    min   = as.Date("2027-01-01"),
+                                                    max   = as.Date("2027-12-31"),
+                                                    format = "yyyy-mm-dd"),
                                      fluidRow(
                                        column(4,
                                               numericInput(inputId = "SFctPR_1_bag", label ="Bag Limit",
@@ -1314,11 +1275,12 @@ server <- function(input, output, session) {
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "SFctPR_1_len", label ="Min Length",
                                                           min = 14, max = 21, value = 19, step = .5))) ,
-                                     rlang::exec(sliderInput,inputId = "SFctSH_seas1", label ="Shore  Season 1",
-                                                 
-                                                 
-                                                 value=c(as.Date("05-04","%m-%d"),as.Date("08-01","%m-%d")), 
-                                                 !!!date_slider_defaults),
+                                     dateRangeInput(inputId = "SFctSH_seas1", label ="Shore Season 1",
+                                                    start = as.Date("2027-05-04"),
+                                                    end   = as.Date("2027-08-01"),
+                                                    min   = as.Date("2027-01-01"),
+                                                    max   = as.Date("2027-12-31"),
+                                                    format = "yyyy-mm-dd"),
                                      fluidRow(
                                        column(4,
                                               numericInput(inputId = "SFctSH_1_bag", label ="Bag Limit",
@@ -1326,11 +1288,12 @@ server <- function(input, output, session) {
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "SFctSH_1_len", label ="Min Length",
                                                           min = 14, max = 21, value = 19, step = .5))), 
-                                     rlang::exec(sliderInput,inputId = "SFctFH_seas2", label ="For Hire  Season 2",
-                                                 
-                                                 
-                                                 value=c(as.Date("08-02","%m-%d"),as.Date("10-15","%m-%d")), 
-                                                 !!!date_slider_defaults),
+                                     dateRangeInput(inputId = "SFctFH_seas2", label ="For Hire Season 2",
+                                                    start = as.Date("2027-08-02"),
+                                                    end   = as.Date("2027-10-15"),
+                                                    min   = as.Date("2027-01-01"),
+                                                    max   = as.Date("2027-12-31"),
+                                                    format = "yyyy-mm-dd"),
                                      fluidRow(
                                        column(4,
                                               numericInput(inputId = "SFctFH_2_bag", label ="Bag Limit",
@@ -1338,11 +1301,12 @@ server <- function(input, output, session) {
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "SFctFH_2_len", label ="Min Length",
                                                           min = 14, max = 21, value = 19.5, step = .5))) ,
-                                     rlang::exec(sliderInput,inputId = "SFctPR_seas2", label ="Private  Season 2",
-                                                 
-                                                 
-                                                 value=c(as.Date("08-02","%m-%d"),as.Date("10-15","%m-%d")), 
-                                                 !!!date_slider_defaults),
+                                     dateRangeInput(inputId = "SFctPR_seas2", label ="Private Season 2",
+                                                    start = as.Date("2027-08-02"),
+                                                    end   = as.Date("2027-10-15"),
+                                                    min   = as.Date("2027-01-01"),
+                                                    max   = as.Date("2027-12-31"),
+                                                    format = "yyyy-mm-dd"),
                                      fluidRow(
                                        column(4,
                                               numericInput(inputId = "SFctPR_2_bag", label ="Bag Limit",
@@ -1350,11 +1314,12 @@ server <- function(input, output, session) {
                                        column(6,
                                               rlang::exec(sliderInput, inputId= "SFctPR_2_len", label ="Min Length",
                                                           min = 14, max = 21, value = 19.5, step = .5))) ,
-                                     rlang::exec(sliderInput,inputId = "SFctSH_seas2", label ="Shore  Season 2",
-                                                 
-                                                 
-                                                 value=c(as.Date("08-02","%m-%d"),as.Date("10-15","%m-%d")), 
-                                                 !!!date_slider_defaults),
+                                     dateRangeInput(inputId = "SFctSH_seas2", label ="Shore Season 2",
+                                                    start = as.Date("2027-08-02"),
+                                                    end   = as.Date("2027-10-15"),
+                                                    min   = as.Date("2027-01-01"),
+                                                    max   = as.Date("2027-12-31"),
+                                                    format = "yyyy-mm-dd"),
                                      fluidRow(
                                        column(4,
                                               numericInput(inputId = "SFctSH_2_bag", label ="Bag Limit",
