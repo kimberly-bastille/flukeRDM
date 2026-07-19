@@ -1,3 +1,55 @@
+################################################################################
+################################################################################
+# Script:       predict_rec_catch_data_read_test2_min_minus2.R
+# Purpose:      Sensitivity variant: loads projection inputs from feather files and
+#               REDUCES the minimum size for summer flounder, black sea bass
+#               and scup by 2 inches wherever that species' season is open
+#               (bag > 0). Closed seasons are left alone so the sentinel
+#               closed-season minimum is not accidentally made attainable.
+# Inputs:       directed_trips_calibration_new_<ST>.feather,
+#               proj_catch_draws_<ST>_<draw>.feather,
+#               projected_catch_at_length_new.csv
+# Outputs:      None. Objects are left in the global environment for the
+#               companion predict/functions script to use.
+# Dependencies: Objects `st` and `dr` must exist in the calling environment.
+#               Packages magrittr, dplyr, feather or fst, readr, data.table.
+#
+# THE predict_rec_catch_data_read_* FAMILY (5 files). Each loads the inputs
+# for one state x draw of the projection, then leaves them in the global
+# environment for a companion predict/functions script to consume. They differ
+# only in input format and in what they do to the regulations before handing
+# them on:
+#   test1                - earliest version; feather inputs; no SQ columns kept
+#   test2                - same, migrated from feather to fst; keeps the SQ
+#                          (status-quo) regulation columns alongside the _y2
+#                          alternative columns so the two can be compared
+#   test2_min_minus2     - test2's regulation handling on feather inputs, with
+#                          every minimum size reduced by 2 inches
+#   test2_min_plus2      - same, with every minimum size increased by 2 inches
+#   test3_nochange       - same, with regulations left untouched (the control)
+# The +/-2 inch pair and the no-change control together form a sensitivity
+# test: run all three and the spread shows how responsive the model's welfare
+# and harvest estimates are to a small uniform change in minimum size.
+#
+# Shared conventions across the family:
+#   - `st` and `dr` (state, draw) are NOT arguments. They are expected to
+#     already exist in the calling environment, set by a driver such as
+#     test2_loop.R or test_predict_rec_catch.R. The commented-out loops near
+#     the top of each file show the intended driver shape.
+#   - ndraws = 50 here means choice occasions simulated per stratum. It is a
+#     different quantity from the pipeline's $ndraws / n_simulations, which
+#     count simulation draws.
+#   - `_y2` columns are the projection-year (alternative) regulations; `_SQ`
+#     columns preserve the status-quo values for comparison.
+#   - `* 2.54` converts inches to centimetres, the unit of the length data.
+#   - Input paths are absolute paths on individual developers' machines, and
+#     are not consistent even within the family (note "E:/Lou's projects" vs
+#     "E:/Lou_projects"). None of these run as committed without editing.
+#
+# Pipeline: Development/QA scratch. Not called by any wrapper.
+################################################################################
+################################################################################
+
 iterative_input_data_cd="E:/Lou's projects/flukeRDM/flukeRDM_iterative_data"
 input_data_cd="C:/Users/andrew.carr-harris/Desktop/MRIP_data_2025"
 
@@ -40,14 +92,14 @@ directed_trips<-feather::read_feather(file.path(iterative_input_data_cd, paste0(
       # Value if FALSE: keep the original value
       bsb_min_y2), 
     scup_min_y2 = dplyr::if_else(
-      # Condition: bsb_bag > 0
+      # Condition: scup_bag > 0
       scup_bag > 0,
       # Value if TRUE: subtract 2
       scup_min_y2 - 2*2.54,
       # Value if FALSE: keep the original value
       scup_min_y2),
     fluke_min_y2 = dplyr::if_else(
-        # Condition: bsb_bag > 0
+        # Condition: fluke_bag > 0
       fluke_bag > 0,
         # Value if TRUE: subtract 2
       fluke_min_y2 - 2*2.54,

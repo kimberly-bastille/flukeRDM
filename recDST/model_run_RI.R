@@ -1,3 +1,48 @@
+################################################################################
+################################################################################
+# Script:       model_run_RI.R
+# Purpose:      Runs the projection model for Rhode Island under a saved
+#               regulation scenario, then writes one output CSV.
+#
+#               NEAR-DUPLICATE - SEE model_run_MA.R FOR THE FULL EXPLANATION.
+#               The nine recDST/model_run_<ST>.R scripts share one structure.
+#               model_run_MA.R is documented as the canonical reference and
+#               explains the parts that are not self-evident: how the scenario
+#               CSV becomes named objects via assign(), the cascading
+#               case_when chains that build the regulation calendar, the
+#               leap-year day-of-year alignment, the inches-to-centimetres
+#               conversion and the 254 closed-season sentinel, the exists()
+#               test for statewide vs mode-specific black sea bass rules, and
+#               the parallel-draw setup. None of that is repeated here.
+#
+#               What differs in THIS file: the state code embedded in every
+#               filename and regulation object name (ri rather than ma,
+#               e.g. SFriFH_seas1_op), and the number of seasons the
+#               state defines - 2 summer flounder seasons, 3 black sea bass, 4 scup. It also has one exists() branch, on black sea bass.
+#               Everything else, including the 100 draws, 34 workers and seed
+#               915, is identical to model_run_MA.R.
+# Inputs:       regs_<Run_Name>.csv, projected_catch_at_length_new.csv,
+#               L_W_Conversion.csv,
+#               directed_trips_calibration_new_RI.feather,
+#               proj_catch_draws_RI_<draw>.feather,
+#               proj_year_calendar_adjustments_new_RI.csv,
+#               base_outcomes_new_RI_<draw>_<mode>.CSV,
+#               n_choice_occasions_new_RI_<mode>_<draw>.feather,
+#               calibrated_model_stats_new.rds
+# Outputs:      output_RI_<Run_Name>_<timestamp>.csv
+# Dependencies: Sourced by Run_Model.R, which must already have defined
+#               `args`. Packages readr, dplyr, tidyr, feather, data.table,
+#               lubridate, stringr, furrr, future, here.
+# Pipeline:     Terminal stage. Reads the outputs of the Stata pre-sim stage
+#               and the R calibration stage; its own output is read by app.R.
+#
+# KNOWN BROKEN - like every sibling, this script sources
+# Code/sim/predict_rec_catch_functions.R and Code/sim/predict_rec_catch.R,
+# neither of which exists at those paths, so it fails on the first draw. See
+# Run_Model.R's header.
+################################################################################
+################################################################################
+
 ##############################
 ### RI Rec model run  ########
 ##############################
@@ -133,6 +178,7 @@ directed_trips<- directed_trips %>%
 predictions_out10 <- data.frame()
 #future::plan(future::multisession, workers = 36)
 set.seed(915)
+message("model_run_RI.R: starting Rhode Island projection for scenario '", Run_Name, "', 100 draws across 34 parallel workers. Expect a long run.")
 future::plan(future::multisession, workers = 34)
 get_predictions_out<- function(x){
 #for(x in 20:21){
@@ -255,6 +301,8 @@ get_predictions_out<- function(x){
   
   
   ## Run the predict catch function
+  # BROKEN AS COMMITTED - neither sourced file exists at these paths.
+  # See model_run_MA.R and Run_Model.R for details.
   source(here::here("Code/sim/predict_rec_catch_functions.R"))
   source(here::here("Code/sim/predict_rec_catch.R"))
   

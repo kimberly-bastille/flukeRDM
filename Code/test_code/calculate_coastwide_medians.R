@@ -1,3 +1,39 @@
+################################################################################
+################################################################################
+# Script:       calculate_coastwide_medians.R
+# Purpose:      Evaluates coastwide outcomes for every COMBINATION of
+#               candidate state policies. Each state has a short list of
+#               policy options under consideration; this script takes the full
+#               cross-product of those lists, and for each combination sums
+#               the nine states' results into a coastwide total, expresses it
+#               as a percent difference from status quo, and records the
+#               median percent difference across draws by species and metric.
+#               The output is the table used to compare candidate coastwide
+#               packages against one another.
+# Inputs:       output/*.csv (per-state, per-policy model output)
+# Outputs:      all_coastwide_results.csv
+# Dependencies: Packages dplyr, readr, stringr, tidyr, here. Requires the
+#               per-state projection runs for every named policy to already
+#               exist in output/.
+# Pipeline:     Development/QA scratch, downstream of the projection stage.
+#               Not called by any wrapper.
+#
+# The policy lists at the top are HARDCODED to one round of analysis - the
+# names ("JB5", "MYL1", "NC_BW4", ...) are analyst-assigned scenario labels
+# that must match the Run_Name embedded in the output filenames. With three
+# options per state across nine states, the cross-product is 3^9 = 19,683
+# combinations, which is why this script is slow.
+#
+# The median, not the mean, is taken across draws: the percent-difference
+# distribution has a long tail wherever a status-quo denominator is small, and
+# the median is insensitive to it.
+#
+# See also calculate_coastwide_medians_grouped.R, which does the same job but
+# reads the policy definitions from a maintained CSV and groups states into
+# North / South / NJ regions rather than combining them independently.
+################################################################################
+################################################################################
+
 ## Generate coastwide values
 
 MA_policy = c("JB5", "MYL1", "MA_EKsplitseason6")

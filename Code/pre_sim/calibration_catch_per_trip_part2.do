@@ -1,6 +1,39 @@
 
 
 
+/*******************************************************************************
+ Script:       calibration_catch_per_trip_part2.do
+ Purpose:      Two jobs. First, builds the angler demographic pool (age and
+               avidity) from the MRIP Fishing Effort Survey 12-month files,
+               with the QA/QC screens the FES delivery notes require. Second,
+               builds the calibration-year catch draw files: for every day
+               with directed trips, 50 simulated trips x 30 catch-per-trip
+               draws, each assigned a catch outcome sampled from the copula
+               pool for its mode x wave stratum and demographics from the
+               pool built in the first half.
+ Inputs:       fes_person_final_2023<wave>.dta (waves 1-6),
+               directed_trips_calibration_<ST>.csv,
+               calib_catch_draws_raw_<ST>_<i>.dta
+ Outputs:      angler_dems.dta, calib_catch_draws_<ST>_<i>.dta
+ Dependencies: Globals $misc_data_cd, $calib_catch_data_cd and $ndraws.
+               Requires copula_modeling_calibration.R to have produced the
+               raw calibration draws, and catch_per_trip_calibration_part1.do
+               to have produced the directed-trips calendar. Uses the
+               user-written command dsconcat.
+ Pipeline:     Step 9 of model_wrapper.do, gated by the `catch_per_trip2'
+               toggle (default ON). Its projection-year analog is
+               catch_per_trip_projection_part2.do, which shares the trip
+               expansion and catch-sampling logic but omits the demographics.
+
+ Data sensitivity note: the FES 12-month files read below are NOT publicly
+ available and, per the note from the data provider reproduced in the source
+ comments, are essentially unedited raw responses. The QA/QC screens applied
+ here are this project's own, not NOAA's - the 12-month effort fields do not
+ go through the editing that the 2-month fields do.
+*******************************************************************************/
+
+display "calibration_catch_per_trip_part2.do: building the angler demographic pool, then calibration catch draws for 9 states x $ndraws draws. This is one of the longest steps in the Stata pipeline and may run for hours."
+
 * This script create calibration catch draw files for each state that contains:
 	* 50 trips in each day of the calibration year in which there were directed trips, each with 30 draws of catch-per-trip
 	* demographics for each trip that are constant across catch draws
@@ -18,6 +51,14 @@
 		* Wave data will produce independent estimates of 12-month effort."
 		
 *I will use the most recent year of FES survey data available (2023)
+
+/**************************************************/
+/**************************************************/
+/* Section A: Angler demographic pool from FES    */
+/**************************************************/
+/**************************************************/
+
+display "calibration_catch_per_trip_part2.do: assembling the FES angler demographic pool."
 
 global dems
 local wvs 1 2 3 4 5 6
@@ -47,7 +88,16 @@ dsconcat $dems
 gen total_trips_12=boat_trips_12+shore_trips_12
 gen total_trips_2=boat_trips+shore_trips
 
-* Lou's QA/QC on the FES data 
+/* The screens below are internal consistency filters on unedited survey
+   responses, not statistical outlier trimming for its own sake. In order:
+   -3 is the FES missing-value sentinel for age; the 16+ restriction matches
+   the choice experiment's sampling frame (licensees), so that the simulated
+   age distribution and the estimated preferences describe the same
+   population; reporting more trips in the last 2 months than in the last 12
+   is internally impossible; 62 two-month trips is roughly one per day and
+   365 twelve-month trips is more than one per day, both taken as
+   implausible self-reports. */
+* Lou's QA/QC on the FES data
 
 drop if age==-3 // drop missing ages
 keep if age>=16 // drop anglers below the minimum age required for license to align the age distribution with choice experiment sampling frame, which is based on licensees (16+)
@@ -59,10 +109,17 @@ drop if total_trips_2>total_trips_12 // drop if total trips 2 months>total trips
 drop if total_trips_2>=62 // drop if total trips 2 months>60 
 drop if total_trips_12>=365 // drop if total trips 12 months>365 
 
+/* The expand below turns the weighted survey into an explicit population: an
+   angler with weight w becomes w rows, so later sampling from this file is
+   simple random sampling that nonetheless respects the survey weights. That
+   is why the weights must first be divided by 100 - expanding on the raw
+   weights would attempt to materialize ~300 million rows. Dividing
+   proportionally preserves the relative weighting, so the resulting age and
+   avidity distributions are unchanged; only the pool size shrinks. */
 replace final=final/100 // sum of weights is almost 300 million, so I proportionally reduce the weights so my Stata doesn't blow up
 replace final=round(final)
 
-expand final 
+expand final
 su total_trips_12, detail  
 
 egen p9995 = pctile(total_trips_12), p(99.95) // drop total_trips_12 above the 99.95 percentile
@@ -100,9 +157,28 @@ if `r(N)'>0{
 }
 */
 
+/**************************************************/
+/**************************************************/
+/* Section B: Calibration catch draw files        */
+/**************************************************/
+/**************************************************/
+
+/* The commented-out block above is a QA check that looked for missing values
+   in the copula output before this stage consumed it. It is disabled and
+   hardcodes both a two-state list and 100 draws regardless of $ndraws.
+
+   From here the logic parallels catch_per_trip_projection_part2.do: expand
+   each day x mode to 50 trips x 30 catch draws, then sample catch outcomes
+   from the copula pool for the matching mode x wave. See that file for the
+   expansion and with-replacement sampling notes; the difference here is that
+   this version also merges on the demographics built in Section A, which the
+   projection inherits rather than redrawing. */
+
+display "calibration_catch_per_trip_part2.do: generating calibration catch draw files."
+
 ************** Generate catch draw files ******************
- 
-* faster version 
+
+* faster version
 local regions "MA RI CT NY NJ DE MD VA NC"
 
 set more off
@@ -443,3 +519,5 @@ foreach s of local regions {
 
 
 
+
+display "calibration_catch_per_trip_part2.do: finished writing calib_catch_draws files."

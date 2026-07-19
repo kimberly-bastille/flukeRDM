@@ -1,3 +1,51 @@
+################################################################################
+################################################################################
+# Script:       calibrate_rec_catch0_optimized.R
+# Purpose:      Calibration PASS 0 - simulate the calibration year exactly as
+#               the regulations were written, with NO adjustment for illegal
+#               harvest or voluntary release, and measure how far the result
+#               lands from MRIP. For each state x mode x draw it expands each
+#               simulated trip's catch to individual fish, draws each fish a
+#               length from the baseline catch-at-length distribution, applies
+#               the minimum size and bag limit to classify it kept or
+#               released, computes trip utility and the probability the trip
+#               is taken, expands to population totals, and tabulates
+#               model-vs-MRIP differences by species and disposition.
+#               The gaps it measures are the input to PASS 1
+#               (calibrate_rec_catch1_final.R), which reallocates harvest and
+#               discards until those gaps close.
+# Inputs:       simulated_catch_totals.dta, baseline_catch_at_length.csv,
+#               calib_catch_draws_<ST>_<i>.fst
+# Outputs:      calibration_comparison.fst
+# Dependencies: The objects input_data_cd, iterative_input_data_cd and
+#               n_simulations must already exist in the calling environment -
+#               they are set by "R code wrapper.R", which sources this file as
+#               STEP 1. Packages data.table, arrow, readr, haven.
+# Pipeline:     First of the three R calibration/projection steps. Its sibling
+#               calibrate_rec_catch1_final.R reuses the same modeling logic
+#               with reallocation added.
+#
+# Why "optimized": an earlier version (Code/archive/calibrate_rec_catch0.R)
+# performed the same computation but re-read the catch-at-length file inside
+# the innermost loop. This version preloads it once and leans on data.table
+# grouped operations. The fish-level expansion was deliberately RETAINED -
+# bag limits bind on individual fish in size order, so they cannot be applied
+# to trip-level totals without changing the answer.
+#
+# NOTE - preference coefficients are hardcoded here, not read from Stata.
+# The beta_* values in the simulation loop are literal numbers (e.g.
+# beta_sqrt_sf_keep mean 0.827, sd 1.267) rather than reads from
+# preference_params.dta, the file estimate_angler_preferences.do exists to
+# produce. Two consequences worth understanding: (1) the same coefficient
+# means are used on every draw, so sampling uncertainty in the estimated
+# preferences is NOT propagated through the calibration, only heterogeneity
+# across simulated anglers is; (2) if the choice model is ever re-estimated,
+# these literals must be updated by hand or the calibration will silently
+# keep using the old preferences. The sd = 0 entries correspond exactly to
+# the parameters estimate_angler_preferences.do zeroes out as insignificant.
+################################################################################
+################################################################################
+
 # calibration-year trip simulation WITHOUT any adjustments for illegal harvest or voluntary release
 # rewritten for speed/efficiency while RETAINING fish-level expansion
 
@@ -6,10 +54,37 @@ library(arrow)
 library(readr)
 library(haven)
 
+################################################################################
+################################################################################
+# Section A: Helper functions
+################################################################################
+################################################################################
+
+#' @title Divide, returning NA instead of Inf on a zero denominator
+#' @description Used for the reallocation proportions at the end of
+#'   build_compare_table(). A stratum can legitimately have zero modeled
+#'   releases or zero modeled harvest, and the resulting Inf would propagate
+#'   into the reallocation step as a nonsensical instruction. NA marks the
+#'   stratum as "no reallocation possible" instead.
+#' @param num Numerator.
+#' @param den Denominator; zero or NA yields NA.
+#' @return Numeric vector of quotients, NA wherever the denominator was zero
+#'   or missing.
 safe_divide <- function(num, den) {
   ifelse(is.na(den) | den == 0, NA_real_, num / den)
 }
 
+#' @title Probability of choosing the trip over opting out
+#' @description Binary logit probability, computed in a numerically stable
+#'   way. The naive form 1/(1+exp(-z)) overflows to Inf for large negative z,
+#'   which matters here because opt-out utilities can be far from trip
+#'   utilities for unattractive regulation scenarios. The function therefore
+#'   branches: for z >= 0 it uses 1/(1+exp(-z)), and for z < 0 it uses
+#'   exp(z)/(1+exp(z)). Both are algebraically identical to the logit but each
+#'   only ever exponentiates a non-positive number, so neither can overflow.
+#' @param v_trip Deterministic utility of taking the trip.
+#' @param v_optout Deterministic utility of the opt-out (no-trip) alternative.
+#' @return Numeric vector of probabilities in [0, 1] that the trip is taken.
 # stable binary logit probability for the trip alternative
 calc_prob_trip <- function(v_trip, v_optout) {
   z <- v_trip - v_optout
@@ -21,6 +96,38 @@ calc_prob_trip <- function(v_trip, v_optout) {
   out
 }
 
+#' @title Apply bag and size limits to one species, fish by fish
+#' @description Turns a trip-level catch count into kept and released counts
+#'   by simulating individual fish. Each trip's catch is expanded to one row
+#'   per fish, each fish is assigned a length drawn from the baseline
+#'   catch-at-length distribution, and fish at or above the minimum size are
+#'   marked legally keepable. The bag limit is then applied in encounter
+#'   order via a running count of keepable fish: the first `bag` keepable fish
+#'   are kept and everything after is released.
+#'
+#'   Fish-level expansion is the reason this function exists rather than a
+#'   trip-level formula. Whether a given fish is kept depends on how many
+#'   keepable fish preceded it on that trip, which cannot be recovered from
+#'   trip totals. Trips with zero catch skip the expansion entirely and are
+#'   rejoined at the end, which keeps the expanded table as small as possible.
+#' @param catch_dt Trip-level data.table with one row per
+#'   date x mode x tripid x catch_draw, carrying catch counts and the
+#'   regulations in force.
+#' @param catch_col Name of the column holding this species' catch count.
+#' @param bag_col Name of the column holding the bag limit in force.
+#' @param min_col Name of the column holding the minimum size in force.
+#' @param size_dt Catch-at-length lookup with columns `length` and
+#'   `fitted_prob`, giving the sampling distribution of fish lengths.
+#' @param species_prefix One of "sf", "bsb" or "scup"; determines the names of
+#'   the two output columns (tot_keep_<prefix>_new, tot_rel_<prefix>_new).
+#' @return A data.table keyed on date, mode, tripid and catch_draw with kept
+#'   and released counts for this species, covering both the zero-catch and
+#'   positive-catch trips.
+#' @examples
+#' \dontrun{
+#' simulate_species(catch_dt, "sf_cat", "fluke_bag", "fluke_min",
+#'                  size_lookup, "sf")
+#' }
 simulate_species <- function(catch_dt,
                              catch_col,
                              bag_col,
@@ -65,6 +172,10 @@ simulate_species <- function(catch_dt,
 
   setorder(fish_dt, date, mode, tripid, catch_draw, fishid)
   fish_dt[, csum_keep := cumsum(posskeep), by = key_cols]
+  # csum_keep counts keepable fish encountered so far on this trip, so
+  # csum_keep <= bag is what enforces the bag limit in encounter order. The
+  # bag > 0 test handles closed seasons, where the bag is 0 and nothing may be
+  # kept regardless of size.
   fish_dt[, keep := fifelse(bag > 0 & posskeep == 1L & csum_keep <= bag, 1L, 0L)]
   fish_dt[, release := fifelse(keep == 0L, 1L, 0L)]
 
@@ -80,6 +191,28 @@ simulate_species <- function(catch_dt,
   trip_out[]
 }
 
+#' @title Tabulate model-vs-MRIP differences and the implied reallocation
+#' @description Reshapes the simulated totals and the MRIP estimates to a
+#'   common long form, joins them on mode x species x disposition, and
+#'   computes absolute and percent differences. It then derives what PASS 1
+#'   needs in order to close the gap: a direction flag and a proportion.
+#'
+#'   The direction logic reads as follows. If the model harvests LESS than
+#'   MRIP (diff_keep < 0), some fish the model released must in reality have
+#'   been kept, so rel_to_keep is flagged and p_rel_to_keep gives the share of
+#'   modeled releases that would have to be converted. If the model harvests
+#'   MORE than MRIP (diff_keep > 0), the reverse: keep_to_rel is flagged and
+#'   p_keep_to_rel gives the share of modeled harvest to convert. These
+#'   proportions are the "illegal harvest / voluntary release" adjustments
+#'   that PASS 0 deliberately omits.
+#' @param summed_results Population-expanded simulated totals for one draw,
+#'   with one row per mode and columns like sf_keep, sf_rel, sf_catch.
+#' @param MRIP_comparison_draw The MRIP survey totals for the same stratum,
+#'   with matching column names.
+#' @param md The mode label to stamp on the result.
+#' @return A data.table with one row per mode x species carrying the MRIP
+#'   value, model value, difference and percent difference for each of keep,
+#'   release and catch, plus the reallocation direction flags and proportions.
 build_compare_table <- function(summed_results, MRIP_comparison_draw, md) {
 
   metric_cols <- c(
@@ -162,6 +295,16 @@ build_compare_table <- function(summed_results, MRIP_comparison_draw, md) {
   out[]
 }
 
+################################################################################
+################################################################################
+# Section B: Load MRIP targets and catch-at-length, then simulate
+################################################################################
+################################################################################
+
+message("calibrate_rec_catch0_optimized.R: starting calibration pass 0 over 9 states x 3 modes x ", n_simulations, " draws. This is a long-running step.")
+
+# Hardcoded absolute path, unlike the rest of this script, which resolves paths
+# through input_data_cd / iterative_input_data_cd.
 MRIP_comparison <- read_dta("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/calib_catch_draws/simulated_catch_totals.dta") |>
   as.data.table()
 
@@ -333,6 +476,13 @@ for (s in states) {
 
       parameters <- unique(trip_data[, .(date, mode, tripid)])
 
+      # These coefficient means and standard deviations are the fitted mixed
+      # logit results, transcribed as literals rather than read from
+      # preference_params.dta. See the note in the file header: the same values
+      # are used on every draw, so preference SAMPLING uncertainty is not
+      # propagated here, only across-angler heterogeneity within a draw. The
+      # sd = 0 entries are the parameters whose estimated dispersion was not
+      # significant at the 10% level.
       parameters[, `:=`(
         beta_sqrt_sf_keep     = rnorm(.N, mean = 0.827, sd = 1.267),
         beta_sqrt_sf_release  = rnorm(.N, mean = 0.065, sd = 0.325),
@@ -353,6 +503,12 @@ for (s in states) {
 
       setorder(trip_data, date, mode, tripid, catch_draw)
 
+      # The utility specification. Catch enters as square roots, which imposes
+      # diminishing marginal utility - the second fish is worth less than the
+      # first. The sf x bsb interaction term allows the value of keeping one
+      # species to depend on how much of the other was kept. The opt-out
+      # utility shifts with angler age and avidity, so more avid anglers are
+      # less easily deterred from fishing.
       trip_data[, `:=`(
         vA_trip =
           beta_sqrt_sf_keep * sqrt(tot_keep_sf_new) +

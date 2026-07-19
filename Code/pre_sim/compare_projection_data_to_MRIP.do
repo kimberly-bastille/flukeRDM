@@ -1,10 +1,50 @@
 
 
+/*******************************************************************************
+ Script:       compare_projection_data_to_MRIP.do
+ Purpose:      Validation and cleanup step for the projection catch draws.
+               Computes mean catch-per-trip from the simulated daily draws,
+               plots those means against the MRIP survey estimates with 95%
+               confidence intervals so the two can be compared by eye, then
+               strips the columns the R projection stage does not need and
+               rewrites the draw files in place.
+ Inputs:       proj_catch_draws_<ST>_<i>.dta,
+               projected_mrip_catch_processed.xlsx
+ Outputs:      simulated_projected_catch_means3.dta,
+               mean_proj_catch_MRIP_simulated_<ST>.png (one per state),
+               and proj_catch_draws_<ST>_<i>.dta overwritten with a reduced
+               column set.
+ Dependencies: Globals $misc_data_cd, $proj_catch_data_cd, $figure_cd and
+               $ndraws. Requires catch_per_trip_projection_part2.do to have
+               run. Uses the user-written commands renvarlab and grc1leg.
+ Pipeline:     Step 13d of model_wrapper.do, the last script inside the
+               `catch_per_trip_project' meta-toggle. Its calibration analog is
+               compare_calibration_data_to_MRIP.do, which is substantially
+               longer. The column-stripping in Step 3 is what the R projection
+               stage actually depends on; the figures are for human review.
+
+ IMPORTANT - two behaviors to know before running:
+   1. Step 3 OVERWRITES the proj_catch_draws files in place with a reduced
+      column set. It is therefore not safe to re-run this script twice without
+      re-running catch_per_trip_projection_part2.do first - the second pass
+      would try to drop columns that no longer exist.
+   2. The script contains bare `browse' commands in Step 2, which open the
+      data editor and halt in a non-interactive session.
+*******************************************************************************/
+
+display "compare_projection_data_to_MRIP.do: computing simulated catch-per-trip means, comparing to MRIP, and reducing the projection draw files. This reads every proj_catch_draws file twice and may take a long time."
+
 *The copula model data is used to generate daily catch-draw data, so here I:
 		*1) compute mean catch-per-trip from the daily catch-draw data
 		*2) compare catch-per-trip means from 1) with estimates from MRIP
 		*3) remove extranneous information and save dataset for R projection code. 
 		
+
+/**************************************************/
+/**************************************************/
+/* Section A: Mean catch-per-trip from the draws  */
+/**************************************************/
+/**************************************************/
 
 * Step 1)
 clear
@@ -42,8 +82,22 @@ use `master', clear
 save "$misc_data_cd\simulated_projected_catch_means3.dta", replace 
 
 
-* Step 2) 
-u "$misc_data_cd\simulated_projected_catch_means3.dta", clear 
+/**************************************************/
+/**************************************************/
+/* Section B: Compare to MRIP and plot            */
+/**************************************************/
+/**************************************************/
+
+/* The xtset/tsfill block below fills in state x mode x draw x wave cells that
+   never appeared in the simulation - a stratum with no directed trips in a
+   given wave produces no rows at all, but the comparison needs it present as
+   a zero rather than absent. Treating the domain as a panel id and the wave as
+   the time index is what lets tsfill, full manufacture those rows; the
+   subsequent split/replace recovers state, mode and draw from the packed
+   domain string because tsfill leaves them missing on the new rows. The two
+   mvencode passes turn the resulting missings into zeros. */
+* Step 2)
+u "$misc_data_cd\simulated_projected_catch_means3.dta", clear
 
 ds draw mode state wave, not
 local vars `r(varlist)'
@@ -119,6 +173,12 @@ merge 1:1 state wave mode  species disp using `sim'
 browse if _merge==2
 browse
 
+/* 1.96 is the normal 95% critical value. The MRIP interval uses the survey
+   standard error, so it expresses sampling uncertainty in the survey estimate;
+   the simulated interval uses the standard deviation ACROSS DRAWS, so it
+   expresses uncertainty introduced by the model's own draws. The two bars in
+   the plots below therefore are not the same quantity - overlapping intervals
+   indicate the simulation is consistent with MRIP, not that they agree. */
 gen mrip_ul=mrip_total+1.96*mrip_sd
 gen mrip_ll=mrip_total-1.96*mrip_sd
 gen sim_ul=sim_total+1.96*sim_sd
@@ -204,10 +264,30 @@ graph export "$figure_cd/mean_proj_catch_MRIP_simulated_MD.png", as(png) replace
 grc1leg  sf_cat_VA_new bsb_cat_VA_new  scup_cat_VA_new   , cols(3)	 title("Mean catch-per-trip, MRIP vs. simulated estimates VA", size(small))
 graph export "$figure_cd/mean_proj_catch_MRIP_simulated_VA.png", as(png) replace
 
+/* BUG, flagged not fixed: the NC panel below combines sf_cat_NC_new with
+   bsb_cat_VA_new and scup_cat_VA_new. Two of the three sub-plots in
+   mean_proj_catch_MRIP_simulated_NC.png therefore show VIRGINIA black sea
+   bass and scup, not North Carolina, while the title says NC. This is a
+   copy-paste artifact from the VA block just above. Anyone who has used that
+   figure to judge NC black sea bass or scup fit was reading VA data. */
 grc1leg sf_cat_NC_new bsb_cat_VA_new  scup_cat_VA_new  , cols(3) title("Mean catch-per-trip, MRIP vs. simulated estimates NC", size(small))
 graph export "$figure_cd/mean_proj_catch_MRIP_simulated_NC.png", as(png) replace
 
 
+
+/**************************************************/
+/**************************************************/
+/* Section C: Strip unused columns from the draws */
+/**************************************************/
+/**************************************************/
+
+/* This is the step the R projection stage actually depends on. The keep/rel
+   columns and the calendar helpers are dropped because the projection
+   recomputes them from catch totals under the alternative regulations - a
+   projection that inherited the calibration-year keep/release split would be
+   assuming the answer. Files are rewritten in place; see the re-run warning
+   in the header. */
+display "compare_projection_data_to_MRIP.do: reducing proj_catch_draws files in place (Step 3)."
 
 * Step 3)
 clear
@@ -224,3 +304,5 @@ foreach s of local statez {
 		}
 }	
 	
+
+display "compare_projection_data_to_MRIP.do: finished."
