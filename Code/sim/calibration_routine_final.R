@@ -35,6 +35,8 @@
 #               table; its output feeds the projection stage and is also what
 #               "check calibration convergence.do" filters down to 100 usable
 #               draws.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (E:\), at line 77.
 #
 # HOW THE SEARCH WORKS (the part worth understanding before editing):
 #   - Convergence for a species is is_achieved(): harvest within 500 fish OR

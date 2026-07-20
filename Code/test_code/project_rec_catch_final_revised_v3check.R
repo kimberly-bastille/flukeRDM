@@ -11,6 +11,8 @@
 # Outputs:      Returned to the caller.
 # Dependencies: Packages data.table, fst, readr.
 # Pipeline:     Development/QA scratch. Not called by any wrapper.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (C:\), at line 240 (the L_W_Conversion.csv default argument).
 #
 # Differs from project_rec_catch_final_revised_v3.R in roughly 290 lines, so
 # the two are not interchangeable. Which of the pair is authoritative is not

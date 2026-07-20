@@ -18,6 +18,8 @@
 # Pipeline:     Development/QA scratch - the candidate replacement for the
 #               Code/sim projection path. Driven by run_projection_final.R.
 #               Not called by any wrapper.
+# Dev paths:    2 hardcoded absolute paths to a developer's local machine
+#               (C:\ or E:\), both in commented-out lines (272, 273).
 ################################################################################
 ################################################################################
 

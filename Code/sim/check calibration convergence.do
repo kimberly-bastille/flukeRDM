@@ -24,6 +24,8 @@
                elsewhere. Requires the
                calibration round (calibration_routine_final.R) to have already
                produced the model stats file.
+ Dev paths:    3 hardcoded absolute paths to a developer's local machine
+               (E:\), at lines 59-61 (the three `import' statements above).
  Pipeline:     Manual QA step between the R calibration stage and the
                projection stage. Not called by model_wrapper.do or by
                "R code wrapper.R" - it is run by hand.

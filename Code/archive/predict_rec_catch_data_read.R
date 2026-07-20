@@ -15,6 +15,9 @@
 # should not be used to understand how the pipeline currently behaves.
 # Per the documentation session's scope, archived files received a header
 # only - no inline documentation, and no code was changed.
+#
+# Dev paths: 3 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 25, 26 and 66.
 ################################################################################
 ################################################################################
 

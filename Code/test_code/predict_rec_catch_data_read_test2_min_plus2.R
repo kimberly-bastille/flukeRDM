@@ -45,6 +45,9 @@
 #     "E:/Lou_projects"). None of these run as committed without editing.
 #
 # Pipeline: Development/QA scratch. Not called by any wrapper.
+#
+# Dev paths (this file): 3 hardcoded absolute paths to a developer's local
+#   machine (C:\ or E:\), at lines 51, 52 and 114.
 ################################################################################
 ################################################################################
 

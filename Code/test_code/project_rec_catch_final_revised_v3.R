@@ -20,6 +20,8 @@
 # Pipeline:     Development/QA scratch - the candidate replacement for the
 #               Code/sim projection path. Driven by run_projection_final.R.
 #               Not called by any wrapper.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (C:\), at line 282 (the L_W_Conversion.csv default argument).
 #
 # Beyond the refactor, this version adds stable_logsum2() and
 # fill_na_numeric() to the helper set, and pushes the input reading into

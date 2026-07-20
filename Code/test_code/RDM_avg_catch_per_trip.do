@@ -20,6 +20,8 @@
  Dependencies: MRIP data for both vintages must be available.
  Pipeline:     Development/QA scratch, run after a model round. Not called by
                any wrapper.
+ Dev paths:    1 hardcoded absolute path to a developer's local machine
+               (C:\), at line 54.
 
  Note the cross-project origin: the header refers to the GROUNDFISH RDM's
  FY2026 cycle, but the file lives in the flukeRDM repo. The two projects share

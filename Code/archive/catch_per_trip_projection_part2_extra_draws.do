@@ -13,6 +13,8 @@
  should not be used to understand how the pipeline currently behaves.
  Per the documentation session's scope, archived files received a header
  only - no inline documentation, and no code was changed.
+ Dev paths:    5 hardcoded absolute paths to a developer's local machine
+               (E:\), at lines 71, 97, 210, 224 and 227.
 ******************************************************************************/
 
 

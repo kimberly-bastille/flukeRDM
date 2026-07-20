@@ -29,6 +29,8 @@
 #               files rather than shared. See those definitions in
 #               calibrate_rec_catch0_optimized.R for their documentation;
 #               only what is new here is documented below.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (C:\), at line 499 (the L_W_Conversion.csv read).
 #
 # THE UTILITY ADJUSTMENT - the subtlest thing in this file.
 # Reallocation creates a conflict between two uses of the same fish. A fish

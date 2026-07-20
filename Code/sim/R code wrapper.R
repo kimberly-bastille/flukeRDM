@@ -33,6 +33,9 @@
 #               file. The operator must know to run model_wrapper.do first and
 #               then this, by hand, in that order. Downstream, Run_Model.R is
 #               a third independent entry point.
+# Dev paths:    12 hardcoded absolute paths to a developer's local machine
+#               (C:\ or E:\), at lines 129-130, 211-212, 215-216, 297, 301,
+#               335 and 339; plus 2 more in commented-out lines (150, 170).
 #
 # Configuration mismatches to be aware of (documented, not changed):
 #   - n_simulations is 10 here. The comment above it describes the intended

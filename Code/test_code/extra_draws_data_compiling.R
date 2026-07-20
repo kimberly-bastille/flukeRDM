@@ -28,6 +28,10 @@
 #
 # The two bare `st<-` assignments near the top are leftovers for interactive
 # stepping; the loops immediately overwrite them.
+#
+# Dev paths: 19 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 36, 37, 53, 59, 86, 97, 104, 121, 124, 127, 130,
+#   139, 145, 154, 155, 174, 175, 189 and 190.
 ################################################################################
 ################################################################################
 

@@ -23,6 +23,9 @@
 #               to the same locations. The four allowed developer values and
 #               this two-branch structure are shared infrastructure with
 #               GroundfishRDM, which uses $gfdatadir for the same role.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (E:\), at line 34 - this is the file's entire purpose (the
+#               LCH branch of the per-developer split), not an oversight.
 ################################################################################
 ################################################################################
 

@@ -27,6 +27,9 @@
 #
 # Note on the output filename: it says MA_NY, but the loops cover all nine
 # states. The name is left over from an earlier, narrower version of the test.
+#
+# Dev paths: 8 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 34, 35, 53, 54, 55, 88, 89 and 90.
 ################################################################################
 ################################################################################
 

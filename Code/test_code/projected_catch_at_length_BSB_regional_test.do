@@ -22,6 +22,8 @@
  Pipeline:     Development/QA scratch. Not called by any wrapper. Compare
                Code/pre_sim/projected_catch_at_length.do, the production
                version.
+ Dev paths:    1 hardcoded absolute path to a developer's local machine
+               (C:\), at line 744.
 *******************************************************************************/
 
 

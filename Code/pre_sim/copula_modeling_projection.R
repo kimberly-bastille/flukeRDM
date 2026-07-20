@@ -19,6 +19,8 @@
 #               per-stratum means and standard errors from
 #               catch_per_trip_projection_part1.do; its output is expanded into
 #               daily catch draws by catch_per_trip_projection_part2.do.
+# Dev paths:    2 hardcoded absolute paths to a developer's local machine
+#               (E:\), at lines 112 and 116.
 #
 # NEAR-DUPLICATE of copula_modeling_calibration.R. The two files differ in
 # only about eighteen lines: the input workbook, the output directory, the

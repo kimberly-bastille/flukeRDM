@@ -27,6 +27,8 @@
 # Pipeline:     Last of the three R steps. Deliberately mirrors
 #               calibrate_rec_catch1_final.R so that baseline and projection
 #               are computed the same way and their difference is meaningful.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (E:\), at line 61.
 #
 # NOTE - THE CONFIGURATION BLOCK BELOW IS SET FOR TESTING, NOT PRODUCTION.
 # states is c("MA", "RI") rather than all nine, and n_simulations is 3. It

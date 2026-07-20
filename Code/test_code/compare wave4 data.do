@@ -16,6 +16,9 @@
  block rather than a description of its own purpose - it was started by
  copying the wrapper. That block documents the pipeline's data calendar, not
  what this script does.
+ Dev paths:    7 hardcoded absolute paths to developers' local machines
+               (C:\ or E:\), at lines 143, 146, 148, 407 and 682; plus 2 more
+               in commented-out globals at lines 144 and 145.
 *******************************************************************************/
 
 

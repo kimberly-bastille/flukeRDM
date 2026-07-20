@@ -24,6 +24,8 @@
 # Pipeline:     First of the three R calibration/projection steps. Its sibling
 #               calibrate_rec_catch1_final.R reuses the same modeling logic
 #               with reallocation added.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (E:\), at line 308.
 #
 # Why "optimized": an earlier version (Code/archive/calibrate_rec_catch0.R)
 # performed the same computation but re-read the catch-at-length file inside

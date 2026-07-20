@@ -23,6 +23,10 @@
 #
 # Note: the nine-state loop on the line below the active one is commented out;
 # as committed this runs MA only.
+#
+# Dev paths: 6 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 57, 58, 83, 84 and 85; plus 1 more in a
+#   commented-out line (92).
 ################################################################################
 ################################################################################
 

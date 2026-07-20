@@ -25,6 +25,9 @@
 # that "check calibration convergence.do" can select 100 that converged. This
 # does not match the 10 used in "Code/sim/R code wrapper.R" or the 100/3 that
 # Stata's $ndraws takes; the three are not programmatically linked.
+#
+# Dev paths: 4 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 78, 79, 86 and 87.
 ################################################################################
 ################################################################################
 
