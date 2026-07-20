@@ -151,6 +151,7 @@ loc catch_per_trip1 = 1				// Part 1 of catch per trip
 loc copula_in_R = 1					// Copula model in R
 loc catch_per_trip2 = 1				// Part 2 of catch per trip
 loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
+loc prep_NAA_for_dashboard = 1		 		// Pull Assessment data
 loc prep_cpt_for_dashboard= 0		// prep data for dashboard NOT IN WRAPPER. NOT WRITTEN, See Groundfish repo
 loc Rpush_to_gdrive =0 				// Push to google drive in R NOT IN WRAPPER. WRITTEN but not tested 
 loc angler_demogs	=1				// add additonal angler demographics
@@ -177,6 +178,13 @@ if `pull_assessment' {
 	do "$input_code_cd\get_assessment_from_gdrive.do"
 	}
 
+	/* This code requires you to mount your google drive to D on your computer */
+if `prep_NAA_for_dashboard' {
+	di "Pulling Assessment data from google"
+	do "$input_code_cd\rdb_processing_NAA.do"
+	}
+
+	
 	
 
 // 1) Pull the MRIP data
