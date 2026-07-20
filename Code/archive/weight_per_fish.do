@@ -1,3 +1,20 @@
+/******************************************************************************
+ ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+ 
+ Script:      weight_per_fish.do
+ Purpose:     Estimates average weight per harvested and per discarded fish from
+              MRIP data. The input that 'compute SQ weights from averages.R'
+              consumed.
+ Superseded by: the length-weight conversion applied in the projection stage
+ 
+ This file is retained for reference and is not called by any wrapper,
+ script or app in this repository. It is NOT maintained: paths, data
+ formats and modeling choices in it may be years out of date, and it
+ should not be used to understand how the pipeline currently behaves.
+ Per the documentation session's scope, archived files received a header
+ only - no inline documentation, and no code was changed.
+******************************************************************************/
+
 
 
 

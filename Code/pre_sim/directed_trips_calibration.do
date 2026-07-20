@@ -1,3 +1,57 @@
+/*******************************************************************************
+ Script:       directed_trips_calibration.do
+ Purpose:      Estimates recreational fishing EFFORT for the calibration year
+               and turns it into the day-by-day trip calendar the rest of the
+               pipeline simulates over. Five steps, as the source comment
+               below lists: estimate directed trips and their standard errors
+               by stratum from MRIP; draw $ndraws random realizations of
+               directed trips per stratum from those estimates, so that effort
+               uncertainty propagates into the results; divide each draw by
+               the number of days in the stratum to get trips per day; compute
+               a calendar adjustment factor reconciling the differing day
+               counts of the calibration and projection years; and attach the
+               regulations in force on each day.
+
+               "Directed trips" means trips that targeted or caught one of the
+               three managed species - the denominator the whole model works
+               in. A stratum here is state x wave x mode x kind-of-day.
+ Inputs:       The MRIP trip and catch files named by $triplist and $catchlist.
+ Outputs:      directed_trips_calibration_<ST>.csv,
+               directed_trips_imputations_<ST>.dta,
+               proj_year_calendar_adjustments_<ST>.csv,
+               and the MRIP directed-trip totals at four levels of
+               aggregation, which compare_calibration_data_to_MRIP.do later
+               validates against:
+               mrip_dtrip_calib_state.dta,
+               mrip_dtrip_calib_state_mode.dta,
+               mrip_dtrip_calib_state_mode_wave.dta,
+               mrip_dtrip_calib_state_month.dta
+ Dependencies: Globals $triplist, $catchlist, $misc_data_cd, $input_data_cd,
+               $ndraws, $seed, $calibration_year, $calibration_start_date,
+               $calibration_end_date, $projection_date_start,
+               $projection_date_end, $fed_holidays, $fed_holidays_y2 and
+               $leap_yr_days. Requires MRIP_lists.do to have run first, since
+               that is the only source of $triplist and $catchlist. Uses the
+               user-written commands dsconcat and gammafit.
+ Pipeline:     Step 2 of model_wrapper.do, gated by the toggle estimate_dtrips.
+               The longest script in the repo. Its output is the calendar that
+               every later stage expands into simulated trips.
+
+ CALLS set_regulations.do UNCONDITIONALLY, once per state, from inside this
+ script's state loop. That file is not listed in model_wrapper.do and has no
+ toggle of its own, so it runs whenever this one does. It holds the
+ hand-entered season dates and bag/size limits and MUST BE UPDATED EVERY YEAR.
+ See its header - including the requirement that only one state be in memory
+ when it runs, which is why it is called from inside the loop rather than once
+ at the end.
+
+ Kind-of-day: MRIP treats federal holidays as weekend days for effort
+ estimation, which is why $fed_holidays exists and why effort is estimated at
+ the month x weekend/weekday level rather than by calendar date.
+*******************************************************************************/
+
+display "directed_trips_calibration.do: estimating directed trips from MRIP and drawing $ndraws effort realizations per stratum across 9 states. This is the longest step in the Stata pipeline."
+
 
 
 /*This code uses the MRIP data to 

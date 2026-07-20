@@ -1,3 +1,42 @@
+/*******************************************************************************
+ Script:       compare_calibration_data_to_MRIP.do
+ Purpose:      Validation gate for the calibration stage, and the producer of
+               the harvest and discard totals the baseline catch-at-length
+               step needs. Computes mean catch-per-trip from the simulated
+               daily draws, scales those means by the number of trips on each
+               day to get simulated TOTALS, and compares both means and totals
+               to MRIP - at state x mode x wave and again at the coarser
+               state x mode level. Writes comparison figures for human review
+               and saves the simulated totals.
+ Inputs:       directed_trips_calibration_<ST>.csv,
+               calib_catch_draws_<ST>_<i>.dta,
+               baseline_mrip_catch_processed.xlsx, and the MRIP catch and
+               directed-trip totals at two levels of aggregation:
+               mrip_catch_calib_state_mode.dta,
+               mrip_catch_calib_state_mode_wave.dta,
+               mrip_dtrip_calib_state_mode.dta,
+               mrip_dtrip_calib_state_mode_wave.dta
+ Outputs:      simulated_catch_totals3.dta, simulated_catch_totals.dta, and
+               per-state comparison figures under $figure_cd.
+ Dependencies: Globals $misc_data_cd, $calib_catch_data_cd, $figure_cd and
+               $ndraws. Requires calibration_catch_per_trip_part2.do to have
+               produced the calibration catch draws. Uses the user-written
+               commands renvarlab and grc1leg.
+ Pipeline:     Step 6 of model_wrapper.do, gated by the toggle
+               compare_calibration_MRIP. Its output is not merely diagnostic:
+               simulated_catch_totals.dta is the file the R calibration reads
+               as its MRIP target, so this script sits ON the critical path,
+               not to one side of it. Its projection-year analog,
+               compare_projection_data_to_MRIP.do, is much shorter because it
+               does not have to produce totals for a downstream stage.
+
+ Why totals and not just means: a stratum can match MRIP on mean
+ catch-per-trip and still miss badly on totals if the effort estimate is off,
+ and it is the totals that the harvest limits bind on. Both are checked.
+*******************************************************************************/
+
+display "compare_calibration_data_to_MRIP.do: computing simulated calibration totals and comparing to MRIP. This reads every calib_catch_draws file and may take a long time."
+
 
 
 

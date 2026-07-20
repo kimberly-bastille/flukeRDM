@@ -1,3 +1,29 @@
+/*******************************************************************************
+ Script:       projected_catch_at_length_BSB_regional_test.do
+ Purpose:      Development variant of projected_catch_at_length.do used to
+               test REGIONAL treatment of black sea bass. Builds
+               calibration-year catch-at-length by taking simulated total
+               catch per species and state, multiplying by fitted
+               catch-at-length probabilities, and then carrying the result
+               through the projection.
+
+               The regional question this file exists to explore: the fitted
+               catch-at-length probabilities are estimated by region for
+               summer flounder and black sea bass (MA-NY, NJ, DE-NC) but
+               coastwide for scup, so black sea bass results depend on how
+               regions are drawn. Black sea bass is also assessed as northern
+               and southern stocks, which is why it gets separate treatment
+               in the production script's assessment handling.
+ Inputs:       Simulated total catch by species and state, and the fitted
+               catch-at-length probability files.
+ Outputs:      Test catch-at-length distributions.
+ Dependencies: Requires the calibration stage to have produced simulated
+               catch totals.
+ Pipeline:     Development/QA scratch. Not called by any wrapper. Compare
+               Code/pre_sim/projected_catch_at_length.do, the production
+               version.
+*******************************************************************************/
+
 
 
 

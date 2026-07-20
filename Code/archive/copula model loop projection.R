@@ -1,3 +1,23 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      copula model loop projection.R
+# Purpose:     Copula simulation of correlated per-trip harvest and releases for
+#              the PROJECTION period. Near-duplicate of 'copula model loop.R' - the
+#              same duplication that persists between the two current copula
+#              scripts.
+# Superseded by: Code/pre_sim/copula_modeling_projection.R
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+################################################################################
+################################################################################
+
 # ---- packages ----
 required_pkgs <- c(
   "survey", "copula", "MASS", "fitdistrplus", "readxl",

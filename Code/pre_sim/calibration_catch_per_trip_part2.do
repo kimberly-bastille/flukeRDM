@@ -13,7 +13,9 @@
                pool built in the first half.
  Inputs:       fes_person_final_2023<wave>.dta (waves 1-6),
                directed_trips_calibration_<ST>.csv,
-               calib_catch_draws_raw_<ST>_<i>.dta
+               calib_catch_draws_raw_<ST>_<i>.dta,
+               trip_costs.dta,
+               preference_params.dta
  Outputs:      angler_dems.dta, calib_catch_draws_<ST>_<i>.dta
  Dependencies: Globals $misc_data_cd, $calib_catch_data_cd and $ndraws.
                Requires copula_modeling_calibration.R to have produced the

@@ -1,3 +1,29 @@
+################################################################################
+################################################################################
+# Script:       predict_rec_catch_test2.R
+# Purpose:      Development variant of the projection main loop - the body
+#               that walks state x mode x draw, calls the per-species
+#               simulate functions, and assembles the projected-versus-
+#               baseline comparison.
+# Inputs:       None directly. Operates on objects left in the environment by
+#               predict_rec_catch_data_read_test2.R.
+# Outputs:      The object `predictions`, which the driver collects.
+# Dependencies: Requires predict_rec_catch_data_read_test2.R and
+#               predict_rec_catch_functions*.R to have been sourced first, in
+#               that order. Driven by test2_loop.R.
+# Pipeline:     Development/QA scratch. Not called by any wrapper.
+#
+# NOT A FUNCTION, DESPITE APPEARANCES. The predict_rec_catch() signature is
+# commented out at the top of the file and the body runs at top level instead,
+# reading `st` and `dr` from the environment. That is deliberate for
+# interactive debugging - it lets a developer step through the loop body line
+# by line - but it means every object the script creates is left in the global
+# environment, and re-running it without re-running the data-read script
+# operates on whatever is still in memory. The production equivalent,
+# Code/sim/predict_rec_catch_final.R, is properly encapsulated.
+################################################################################
+################################################################################
+
 # Predict Rec Catch
 # This function predict recreational catch for summer flounder, black sea bass, and scup. 
 

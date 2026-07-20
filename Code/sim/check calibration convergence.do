@@ -13,9 +13,10 @@
                are admitted to reach the required count. Those two strata
                account for very little harvest, which is the stated
                justification for admitting them.
- Inputs:       calibrated_model_stats_4_16_26.csv (see note below - two other
-               input files are named in the script but are overwritten before
-               use).
+ Inputs:       calibrated_model_stats_4_16_26.csv. Two earlier vintages are
+               also named in the script - calibrated_model_stats.xlsx and
+               calibrated_model_stats_4_2_26.xlsx - but each import carries
+               `clear', so only the last one survives. See the note below.
  Outputs:      calibration_good_draws.xlsx, calibration_good_draws_extras.xlsx
  Dependencies: Global $iterative_input_data_cd for the export paths. The three
                import paths are hardcoded absolute paths on a single

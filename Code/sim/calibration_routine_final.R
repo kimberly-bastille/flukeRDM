@@ -1,4 +1,68 @@
 
+################################################################################
+################################################################################
+# Script:       calibration_routine_final.R
+# Purpose:      Calibration PASS 1 - the search that closes the model-vs-MRIP
+#               harvest gap measured by PASS 0. For each state x mode x draw
+#               and each species it searches for the reallocation proportion p
+#               that brings simulated harvest within tolerance of MRIP, by
+#               repeatedly re-running the trip simulation with a candidate p
+#               and narrowing a bracket around it. The reallocation itself is
+#               performed by calibrate_rec_catch1_final.R, which this script
+#               sources inside the loop; this file owns the search logic, the
+#               convergence criteria and the bookkeeping.
+#
+#               What p means: anglers do not perfectly obey size and bag
+#               limits, and they voluntarily release legal fish. PASS 0
+#               simulates strict compliance and therefore misses MRIP. p is
+#               the fraction of modeled releases converted to harvest
+#               ("rel_to_keep", when the model under-harvests) or of modeled
+#               harvest converted to releases ("keep_to_rel", when it
+#               over-harvests). It is a calibration parameter, not an
+#               estimated behavioral quantity.
+# Inputs:       simulated_catch_totals.dta, calibration_comparison.fst
+#               (PASS 0's output), and the per-draw calibration catch files
+#               read by the sourced simulation script.
+# Outputs:      calibrated_model_stats.fst,
+#               n_choice_occasions_<ST>_<MODE>_<DRAW>.fst,
+#               base_outcomes_<ST>_<MODE>_<DRAW>.fst
+# Dependencies: Objects iterative_input_data_cd and input_data_cd must exist
+#               in the calling environment - set by "R code wrapper.R", which
+#               sources this file as STEP 2. Sources
+#               calibrate_rec_catch1_final.R repeatedly. Packages data.table,
+#               arrow, haven, readr, fst.
+# Pipeline:     Second of the three R steps. Consumes PASS 0's comparison
+#               table; its output feeds the projection stage and is also what
+#               "check calibration convergence.do" filters down to 100 usable
+#               draws.
+#
+# HOW THE SEARCH WORKS (the part worth understanding before editing):
+#   - Convergence for a species is is_achieved(): harvest within 500 fish OR
+#     within 5% of MRIP. Same criterion as "check calibration convergence.do".
+#   - When not converged, score_species() ranks candidate p values so the best
+#     attempt so far can be kept even if nothing fully converges. The score is
+#     keep_score + 0.15 * catch_score, so matching HARVEST dominates and total
+#     catch acts only as a tie-breaker. The catch tolerances are also
+#     deliberately looser (5x on absolute, 4x on percent).
+#   - update_bracket() maintains a [lo, hi] bracket on p in [0, 1] and
+#     bisects. max_iter = 25 caps the search; p_tol = 1e-4 decides when p is
+#     effectively 0 or 1.
+#   - Strata where MRIP harvest is exactly zero are special-cased throughout:
+#     a percent difference is undefined there, so only the absolute criterion
+#     applies and only keep_to_rel is meaningful.
+#   - push_globals() writes the current p and direction into the GLOBAL
+#     environment. That is how the sourced simulation script receives them -
+#     it reads variables like p_rel_to_keep_sf by name rather than taking
+#     arguments. This is the coupling to be careful of when refactoring.
+#
+# NOTE - THE STATE AND DRAW LISTS ARE RESTRICTED. Below, the full nine-state
+# vector is immediately overwritten by c("MA", "RI"), and draws is set to 1:3.
+# As committed this calibrates two states and three draws, not the production
+# set. This reads as debug configuration left in place; it is deliberately NOT
+# changed here.
+################################################################################
+################################################################################
+
 # iterative calibration routine for fluke / black sea bass / scup
 # bounded search with best-so-far selection; no catch-hold adjustment.
 
@@ -43,6 +107,8 @@ if (!("pct_diff_catch" %in% names(baseline_output0)) && all(c("diff_catch", "MRI
   baseline_output0[, pct_diff_catch := fifelse(MRIP_catch != 0, 100 * diff_catch / MRIP_catch, NA_real_)]
 }
 
+# The second assignment overwrites the first: as committed this runs MA and RI
+# only, for 3 draws. See the header - this looks like debug configuration.
 states <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
 states <- c("MA", "RI")
 
@@ -53,6 +119,12 @@ draws <- 1:3
 # mode_draw <- c("pr")
 # draws <- 1:1
 
+# Search settings. The two tolerances are the agreed definition of "close
+# enough to MRIP" and are mirrored in "check calibration convergence.do";
+# changing them here without changing that script would desynchronize which
+# draws are considered usable. max_iter caps the bisection at 25 re-simulations
+# per species x stratum, which is the dominant cost of this step. p_tol is the
+# threshold below which a proportion counts as exactly 0 or exactly 1.
 tol_abs_fish <- 500
 tol_abs_pct  <- 5
 max_iter     <- 25
@@ -60,6 +132,16 @@ p_tol        <- 1e-4
 
 species_vec <- c("sf", "bsb", "scup")
 
+#' @title Has this species converged for this stratum?
+#' @description Applies the calibration tolerance: harvest is close enough
+#'   when it is within 500 fish OR within 5 percent of the MRIP estimate. The
+#'   OR is what lets small strata pass, where 5 percent would be only a few
+#'   fish. Strata whose MRIP harvest is exactly zero are special-cased to the
+#'   absolute test alone, since a percent difference is undefined there.
+#' @param diff_keep Model harvest minus MRIP harvest, in fish.
+#' @param pct_diff_keep The same difference as a percentage of MRIP harvest.
+#' @param MRIP_keep MRIP harvest; only inspected to detect the zero-target case.
+#' @return TRUE if the stratum is within tolerance.
 is_achieved <- function(diff_keep, pct_diff_keep, MRIP_keep = NA_real_) {
   if (is.finite(MRIP_keep) && MRIP_keep == 0) {
     return(is.finite(diff_keep) && abs(diff_keep) < tol_abs_fish)
@@ -69,6 +151,22 @@ is_achieved <- function(diff_keep, pct_diff_keep, MRIP_keep = NA_real_) {
     (is.finite(pct_diff_keep) && abs(pct_diff_keep) < tol_abs_pct)
 }
 
+#' @title Score a candidate reallocation, lower is better
+#' @description Ranks attempts so the best one can be retained when nothing
+#'   fully converges within max_iter. Each component is a distance expressed
+#'   in units of its own tolerance, so a score of 1 sits exactly at the
+#'   tolerance boundary. The combination is
+#'       keep_score + 0.15 * catch_score
+#'   which encodes the modeling priority: matching HARVEST is the objective,
+#'   and total catch only breaks ties between otherwise similar candidates.
+#'   The catch tolerances are additionally loosened (5x on the absolute, 4x on
+#'   the percent) because catch is less precisely estimated than harvest.
+#'   Non-finite inputs score Inf so they never win.
+#' @param diff_keep,pct_diff_keep Harvest difference in fish and percent.
+#' @param diff_catch,pct_diff_catch Total catch difference in fish and percent.
+#' @param MRIP_keep,MRIP_catch MRIP values; inspected only to detect the
+#'   zero-target cases where the percent components are dropped.
+#' @return A single non-negative score; smaller means a better match.
 score_species <- function(diff_keep, pct_diff_keep, diff_catch, pct_diff_catch,
                           MRIP_keep = NA_real_, MRIP_catch = NA_real_) {
   
@@ -93,6 +191,18 @@ score_species <- function(diff_keep, pct_diff_keep, diff_catch, pct_diff_catch,
   keep_score + 0.15 * catch_score
 }
 
+#' @title Pull one species' comparison row, inventing an empty one if absent
+#' @description A species can be entirely missing from a stratum's comparison
+#'   table when it was never caught there. Rather than letting that propagate
+#'   as a zero-row subset, this returns a placeholder row with zero model
+#'   values and NA differences, so downstream code always has exactly one row
+#'   per species and can distinguish "no data" (NA) from "genuinely zero".
+#' @param dt Comparison table for one stratum.
+#' @param sp Species code: "sf", "bsb" or "scup".
+#' @param md Mode label, used only to populate the placeholder.
+#' @param s State code, used only to populate the placeholder.
+#' @param i Draw number, used only to populate the placeholder.
+#' @return A single-row data.table for this species.
 extract_species_row <- function(dt, sp, md, s, i) {
   out <- as.data.table(dt)[species == sp]
   if (nrow(out) == 0L) {
@@ -108,6 +218,22 @@ extract_species_row <- function(dt, sp, md, s, i) {
   out[1]
 }
 
+#' @title Initialize the search state for one species
+#' @description Decides which direction the reallocation must go and where the
+#'   search starts. Direction comes from PASS 0's flags: rel_to_keep when the
+#'   model under-harvested, keep_to_rel when it over-harvested, "none" when it
+#'   already matches. The starting proportion is PASS 0's closed-form estimate
+#'   of what would close the gap, clamped to [0, 1], and the bracket is opened
+#'   to [0, 1] so the search can move either way from it.
+#'
+#'   Two zero-target cases are handled up front. If MRIP harvest and model
+#'   harvest are both zero there is nothing to search and the stratum is
+#'   marked converged. If MRIP harvest is zero but the model harvests
+#'   something, only keep_to_rel can help, so the direction is forced.
+#' @param base_row One species' row from the PASS 0 comparison table.
+#' @return A list holding direction, the current proportion p, the bracket
+#'   endpoints lo and hi, whether tolerance is already met, a convergence
+#'   flag, and slots for the best-scoring attempt seen so far.
 make_state <- function(base_row) {
   
   mrip_keep  <- as.numeric(base_row$MRIP_keep)
@@ -178,6 +304,23 @@ make_state <- function(base_row) {
   )
 }
 
+#' @title Publish the current search state to the global environment
+#' @description The simulation script sourced inside the search loop does not
+#'   take arguments - it reads the reallocation settings from variables in the
+#'   global environment by name. This function writes them there, five per
+#'   species: the two direction flags, the two proportions, and an
+#'   all_keep_to_rel_<sp> flag marking the degenerate case where every
+#'   harvested fish is being converted.
+#'
+#'   This global coupling is the main structural hazard in this file: the
+#'   search and the simulation communicate through names rather than through
+#'   a call signature, so renaming a variable here silently breaks the
+#'   simulation rather than raising an error.
+#' @param states_by_sp Named list of per-species search states, as built by
+#'   make_state().
+#' @param target_env Environment to assign into; the global environment by
+#'   default, which is where the sourced script looks.
+#' @return Nothing, called for its side effect.
 push_globals <- function(states_by_sp, target_env = .GlobalEnv) {
   for (sp in species_vec) {
     st <- states_by_sp[[sp]]
@@ -199,6 +342,21 @@ push_globals <- function(states_by_sp, target_env = .GlobalEnv) {
   }
 }
 
+#' @title Advance the bisection after one simulation attempt
+#' @description Given the outcome of simulating at the current proportion,
+#'   records whether tolerance was met, scores the attempt and keeps it if it
+#'   is the best so far, then narrows the [lo, hi] bracket and proposes the
+#'   next p. A converged attempt is stored with a score of -Inf so nothing can
+#'   displace it.
+#'
+#'   Bracket direction depends on the reallocation direction: under
+#'   rel_to_keep, raising p raises modeled harvest, so an attempt that still
+#'   under-harvests moves the lower bound up; under keep_to_rel the
+#'   relationship is inverted.
+#' @param st The species' current search state, from make_state().
+#' @param row The comparison row produced by simulating at the current p.
+#' @return The updated search state, with a new p to try next unless the
+#'   search has converged or exhausted its bracket.
 update_bracket <- function(st, row) {
   if (st$direction == "none") {
     st$achieved <- TRUE
@@ -503,6 +661,19 @@ library(data.table)
 calibrated_combined <- data.table::as.data.table(calibrated_combined)
 
 # helper for your current long-format output
+#' @title Should this stratum be retried with a wider sublegal size window?
+#' @description The rel_to_keep reallocation draws its converted fish from
+#'   released fish within X inches below the minimum size, starting at X = 3.
+#'   A stratum can run out of eligible fish before it closes the harvest gap -
+#'   it needs more converted fish than exist in that window. This detects that
+#'   case: still short on harvest, still not converged, and reallocating
+#'   upward. The caller responds by widening the window to 4 inches and
+#'   re-running.
+#' @param rel_to_keep Whether this stratum is converting releases to harvest.
+#' @param convergence The stratum's current convergence flag.
+#' @param diff_keep,pct_diff_keep Remaining harvest difference, fish and percent.
+#' @param MRIP_keep MRIP harvest, for the zero-target case.
+#' @return TRUE if the stratum should be re-run with the wider window.
 needs_floor4_rerun <- function(rel_to_keep, convergence, diff_keep, pct_diff_keep, MRIP_keep) {
   # only rerun rel_to_keep cases that still did not converge
   if (!isTRUE(rel_to_keep == 1)) return(FALSE)

@@ -1,3 +1,23 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      calibration routine.R
+# Purpose:     The search that drives PASS 1: reads the model-versus-MRIP harvest
+#              differences from PASS 0 and re-runs the simulation, adjusting
+#              per-trip outcomes until simulated harvest is within 5 percent or
+#              500 fish of MRIP. Same convergence criterion the current code uses.
+# Superseded by: Code/sim/calibration_routine_final.R
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+################################################################################
+################################################################################
+
 
 #This file pulls in the data from step 1, i.e., the differences between model simulated harvest 
 #and MRIP estimates of harvest, and re-runs the calibration model but this time adjusts per-trip

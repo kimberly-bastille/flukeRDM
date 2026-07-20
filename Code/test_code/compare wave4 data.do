@@ -1,3 +1,23 @@
+/*******************************************************************************
+ Script:       compare wave4 data.do
+ Purpose:      Compares MRIP wave 4 estimates across data vintages, to judge
+               how much the preliminary wave 4 release moves once it is
+               revised. Wave 4 matters disproportionately: it covers July and
+               August, the peak of the recreational season, and it is the last
+               wave available before the autumn projection round, so the
+               model depends on a preliminary estimate for the single most
+               important part of the year.
+ Inputs:       MRIP trip and catch files for the vintages being compared.
+ Outputs:      Comparison output for manual inspection.
+ Dependencies: MRIP data for the vintages being compared.
+ Pipeline:     Development/QA scratch. Not called by any wrapper.
+
+ The file opens with a copy of the model_wrapper.do data-availability header
+ block rather than a description of its own purpose - it was started by
+ copying the wrapper. That block documents the pipeline's data calendar, not
+ what this script does.
+*******************************************************************************/
+
 
 
 /****RDM input code wrapper****/

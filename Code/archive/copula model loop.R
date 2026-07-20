@@ -1,3 +1,21 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      copula model loop.R
+# Purpose:     Copula simulation of correlated per-trip harvest and releases for
+#              the CALIBRATION year. At 2,459 lines, the largest file in the repo.
+# Superseded by: Code/pre_sim/copula_modeling_calibration.R
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+################################################################################
+################################################################################
+
 # ---- packages ----
 required_pkgs <- c(
   "survey", "copula", "MASS", "fitdistrplus", "readxl",

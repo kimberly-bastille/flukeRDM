@@ -1,3 +1,40 @@
+/*******************************************************************************
+ Script:       catch_per_trip_calibration_part1.do
+ Purpose:      Estimates mean harvest-, discard- and catch-per-trip with
+               standard errors, by state x wave x mode, for the calibration
+               year - the inputs the copula step needs in order to simulate
+               correlated per-trip catch. Also computes the calibration-year
+               MRIP totals the simulation is later compared against.
+
+               The hard part, and most of the length, is the standard errors.
+               Some state x wave x mode cells contain only a single MRIP
+               primary sampling unit, which yields a mean but no variance. The
+               script imputes a standard error for those cells from related
+               data - other recent years, or coarser levels of aggregation -
+               so that every stratum has a usable mean and SE for the copula
+               to draw from. Without this, those strata would drop out of the
+               simulation entirely rather than merely being uncertain.
+ Inputs:       The MRIP trip and catch files named by $triplist and $catchlist.
+ Outputs:      baseline_mrip_catch_processed.xlsx (the per-stratum mean and
+               standard-error file consumed by
+               copula_modeling_calibration.R), plus the calibration-year MRIP
+               totals at three levels of aggregation:
+               mrip_catch_calib_state.dta,
+               mrip_catch_calib_state_mode.dta,
+               mrip_catch_calib_state_mode_wave.dta
+ Dependencies: Globals $triplist, $catchlist, $misc_data_cd and
+               $calibration_year. Requires MRIP_lists.do to have run. Uses the
+               user-written command dsconcat.
+ Pipeline:     Step 5a of model_wrapper.do, gated by the toggle catch_per_trip1.
+               Feeds the R copula step (5b), whose output
+               calibration_catch_per_trip_part2.do then expands into daily
+               catch draws. Its projection-year analog is
+               catch_per_trip_projection_part1.do, which differs mainly in
+               drawing on a rolling 12 waves of MRIP data instead of one year.
+*******************************************************************************/
+
+display "catch_per_trip_calibration_part1.do: estimating mean catch-per-trip and standard errors by state x wave x mode, imputing standard errors for single-PSU strata. This may take a while."
+
 
 
 

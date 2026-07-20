@@ -9,10 +9,17 @@
  Inputs:       Every file in the shared Drive folder
                .../flukeRDM/input_data (as currently written the script copies
                the whole folder; see the note on the disabled block below).
-               Expected members include fit_NAA_NORTH, fit_NAA_SOUTH,
-               fit_proj_NAA_NORTH, fit_proj_NAA_SOUTH, and the
-               J1_<year><species> series.
- Outputs:      A verbatim copy of each of those files into $misc_data_cd.
+               Expected members, as named by the consumer
+               projected_catch_at_length.do: fit_NAA_NORTH_2024.csv,
+               fit_NAA_SOUTH_2024.csv, fit_proj_NAA_NORTH_2026.csv,
+               fit_proj_NAA_SOUTH_2026.csv, J1_2024Summer_Flounder.csv,
+               J1_2024Scup.csv, J1_2026Summer_Flounder.csv,
+               J1_2026Scup.csv. The years are literal and change each cycle.
+ Outputs:      A verbatim copy into $misc_data_cd of each file above:
+               fit_NAA_NORTH_2024.csv, fit_NAA_SOUTH_2024.csv,
+               fit_proj_NAA_NORTH_2026.csv, fit_proj_NAA_SOUTH_2026.csv,
+               J1_2024Summer_Flounder.csv, J1_2024Scup.csv,
+               J1_2026Summer_Flounder.csv, J1_2026Scup.csv.
  Dependencies: Global $misc_data_cd (set in model_wrapper.do). Requires the
                Google Drive desktop client to be installed and the shared
                drive mounted at D: - the path below is a local filesystem

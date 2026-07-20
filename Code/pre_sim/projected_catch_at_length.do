@@ -1,3 +1,60 @@
+/*******************************************************************************
+ Script:       projected_catch_at_length.do
+ Purpose:      Builds the PROJECTION-year catch-at-length distribution, which
+               is how the stock assessment enters the model. The calibration
+               year's length composition cannot simply be reused: if the stock
+               has more or fewer fish at a given age next year, anglers will
+               encounter a different mix of sizes, and that changes how a
+               given size limit performs.
+
+               The method, in order: take baseline recreational
+               catch-at-length; convert population numbers-at-AGE from the
+               assessment into numbers-at-LENGTH using smoothed age-length
+               keys built from NEFSC trawl survey data; infer the length-
+               specific fraction of the population that the recreational
+               fishery catches in the baseline year (an implied selectivity);
+               then apply that selectivity to the PROJECTION year's
+               numbers-at-length. The result is what anglers are expected to
+               encounter next year given the projected stock.
+ Inputs:       baseline_catch_at_length_region.dta,
+               NEFSC trawl survey data.csv,
+               and the assessment numbers-at-age files pulled by
+               get_assessment_from_gdrive.do - calibration-year:
+               fit_NAA_NORTH_2024.csv,
+               fit_NAA_SOUTH_2024.csv,
+               J1_2024Summer_Flounder.csv,
+               J1_2024Scup.csv;
+               and projection-year:
+               fit_proj_NAA_NORTH_2026.csv,
+               fit_proj_NAA_SOUTH_2026.csv,
+               J1_2026Summer_Flounder.csv,
+               J1_2026Scup.csv.
+               The years in those filenames are literal and change each cycle.
+ Outputs:      projected_catch_at_length.csv,
+               proj_catch_at_length_state.csv
+ Dependencies: Globals $misc_data_cd, $ndraws, $NEFSC_svy_yrs. Requires
+               calibration_catch_at_length.do and
+               get_assessment_from_gdrive.do to have run. Uses the
+               user-written commands renvarlab and gammafit.
+ Pipeline:     Step 8 of model_wrapper.do, gated by the toggle
+               catch_at_length_project. Its output is the length distribution
+               the projection stage draws simulated fish from, and is the only
+               place the stock assessment influences the model.
+
+ INTERPRETATION WARNING, reproduced from the source comment below because it
+ is easy to get wrong: coastwide or stock-level numbers-at-age are DUPLICATED
+ across regions, not divided among them. The regional values are therefore
+ availability indices used to derive the SHAPE of each region's projected
+ catch-at-length. They are not regional abundances and must not be summed
+ across regions to recover a stock total.
+
+ Note: this script calls `set seed 12345' rather than using the pipeline's
+ $seed (03211990). Its random draws are reproducible but are not tied to the
+ rest of the pipeline's seeding.
+*******************************************************************************/
+
+display "projected_catch_at_length.do: deriving projected catch-at-length from assessment numbers-at-age and trawl-survey age-length keys. This may take several minutes."
+
 
 ************************************************************************************************************************************************
 *This script computes projected recreational catch-at-length distributions for summer flounder, black sea bass, and scup by combining:

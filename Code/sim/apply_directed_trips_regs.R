@@ -1,3 +1,74 @@
+################################################################################
+################################################################################
+# Script:       apply_directed_trips_regs.R
+# Purpose:      Holds the per-state regulation logic extracted from the nine
+#               recDST/model_run_<ST>.R scripts. Defines one function that
+#               takes a directed-trips table and a state code and returns the
+#               same table with the projection-year (_y2) bag limits and
+#               minimum sizes filled in from the saved scenario. This is the
+#               single largest piece of duplication in the repo consolidated
+#               into one place - roughly 100 lines of case_when per state,
+#               nine states, all differing only in identifier names.
+# Inputs:       None. Operates on the data frame passed in, and reads the
+#               scenario regulation objects from the calling environment.
+# Outputs:      None. Returns the modified data frame.
+# Dependencies: Packages dplyr and lubridate (yday, ymd used unqualified).
+#               The scenario regulation objects (SFctFH_seas1_op and the like)
+#               must already exist in an enclosing environment - they are
+#               created dynamically by the caller's assign() loop, which is
+#               why they have no visible definition here.
+# Pipeline:     ORPHANED. Nothing in the repo sources this file. Its only
+#               caller is run_state_model.R, which is itself not on any active
+#               code path AND does not source it - so calling that function
+#               raises "could not find function apply_directed_trips_regs".
+#               Wiring this up is part of finishing the per-state refactor.
+#
+# How to read the case_when chains (the same conventions as model_run_MA.R):
+#   - They CASCADE. The first assignment to each column ends `TRUE ~ 0` (bags)
+#     or `TRUE ~ 254` (sizes), setting a closed-season default; every later
+#     one ends `TRUE ~ <same column>` so it can only add open days, never
+#     reopen a day an earlier line closed. Order is therefore significant.
+#   - `* 2.54` converts the scenario's minimum lengths from inches to
+#     centimetres, the unit of the length data.
+#   - 254 is the closed-season sentinel: 100 inches x 2.54, matching the
+#     100-inch default in set_regulations.do. It means no fish is legal.
+#   - Each species block is wrapped in an exists() test distinguishing a
+#     STATEWIDE regulation entry (e.g. SFct_seas1_op) from MODE-SPECIFIC
+#     entries (SFctFH_/SFctPR_/SFctSH_). Which form appears depends on what
+#     the scenario author entered in the app, and because the objects are
+#     created dynamically, exists() is the only way to tell.
+#
+# Identifier convention: <SPECIES><state><MODE>_<field>, e.g. SFctFH_seas1_op
+# is summer flounder, Connecticut, for-hire, season 1 opening date. Fields are
+# seas<n>_op / seas<n>_cl for dates and <n>_bag / <n>_len for the limits.
+#
+# States differ only in how many seasons each species defines and whether a
+# statewide alternative exists for it; there is no structural difference
+# between the nine branches. The final else raises an error on an unrecognized
+# state, so a typo fails loudly rather than silently returning unchanged
+# regulations.
+################################################################################
+################################################################################
+
+#' @title Fill in projection-year regulations for one state
+#' @description Applies a saved regulation scenario to a directed-trips table,
+#'   writing the projection-year bag limits and minimum sizes (the _y2
+#'   columns) for whichever days fall inside each species' open seasons.
+#'   Dispatches on the state code to one of nine hand-written blocks; see the
+#'   file header for the cascading-case_when and sentinel conventions those
+#'   blocks share.
+#' @param directed_trips Data frame of directed trips carrying at least `mode`
+#'   and `date_adj` (day-of-year, leap-adjusted by the caller), plus the
+#'   calibration-year regulation columns.
+#' @param state Two-letter state code. One of CT, DE, MA, MD, NC, NJ, NY, RI,
+#'   VA; anything else raises an error.
+#' @return The input data frame with fluke_bag_y2, fluke_min_y2, bsb_bag_y2,
+#'   bsb_min_y2, scup_bag_y2 and scup_min_y2 populated. Minimum sizes are in
+#'   centimetres; a closed day carries bag 0 and minimum size 254.
+#' @examples
+#' \dontrun{
+#' directed_trips <- apply_directed_trips_regs(directed_trips, "CT")
+#' }
 apply_directed_trips_regs <- function(directed_trips, state) {
   
   if (state == "CT") {

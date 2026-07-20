@@ -1,3 +1,22 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      calibrate_rec_catch.R
+# Purpose:     Calibration-year trip simulation with no adjustment for illegal
+#              harvest or voluntary release. The earliest of the three archived
+#              calibrate_rec_catch* files.
+# Superseded by: Code/sim/calibrate_rec_catch0_optimized.R
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+################################################################################
+################################################################################
+
 
 
 #This is the simulation model for the calibration year WITHOUT any adjustments for illegal harvest or voluntary release

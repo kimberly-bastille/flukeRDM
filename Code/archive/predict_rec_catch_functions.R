@@ -1,3 +1,26 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      predict_rec_catch_functions.R
+# Purpose:     Per-species helper functions for the projection main loop.
+#
+#              READ THIS ONE FIRST IF YOU ARE CHASING THE BROKEN PROJECTION PATH.
+#              This is the file that Run_Model.R's per-state scripts, and
+#              Code/sim/run_state_model.R, still try to source from Code/sim/ - a
+#              path where it does not exist. It was moved here and superseded, but
+#              the callers were never updated. See FLAGGED_ISSUES_FLUKE.md.
+# Superseded by: Code/sim/predict_rec_catch_final.R
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+################################################################################
+################################################################################
+
 
 #Functions for the main loop of predict_rec_catch
 

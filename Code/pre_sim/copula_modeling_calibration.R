@@ -1,3 +1,68 @@
+################################################################################
+################################################################################
+# Script:       copula_modeling_calibration.R
+# Purpose:      Simulates correlated per-trip harvest and releases for summer
+#               flounder, black sea bass and scup in the CALIBRATION year. For
+#               each state x wave x mode stratum it fits marginal
+#               distributions to the survey-weighted MRIP catch-per-trip
+#               estimates, fits a copula to the survey-weighted correlations
+#               among the six quantities, and draws simulated trips that
+#               reproduce both.
+# Inputs:       baseline_mrip_catch_processed.xlsx
+# Outputs:      calib_catch_draws_raw_<ST>_<draw>.dta
+# Dependencies: Packages survey, copula, MASS, fitdistrplus, readxl, weights,
+#               wCorr, patchwork, Hmisc, tidyr, dplyr, ggplot2, writexl, plyr,
+#               conflicted, haven. The script checks for all of them up front
+#               and stops with a list of what is missing.
+# Pipeline:     Step 5b of model_wrapper.do, gated by the toggle copula_in_R
+#               and launched with `rscript using'. Consumes the per-stratum
+#               means and standard errors from
+#               catch_per_trip_calibration_part1.do; its output is expanded
+#               into daily catch draws by calibration_catch_per_trip_part2.do.
+#
+# NEAR-DUPLICATE of copula_modeling_projection.R. The two files differ in only
+# about eighteen lines: the input workbook, the output directory, the output
+# filename prefix, and some indentation. All of the modeling logic is
+# identical and is maintained in two places - a change to the copula fitting
+# here must be mirrored there by hand.
+#
+# WHY A COPULA. Each trip yields harvest and releases for three species at
+# once, and those six quantities are correlated: a trip that catches many
+# summer flounder tends to catch many black sea bass, and harvest and releases
+# of the same species move together. Drawing each quantity from its own
+# marginal distribution independently would destroy that structure and
+# understate the frequency of both very good and very poor trips - which is
+# exactly what a bag limit binds on. A copula separates the two problems:
+# each quantity keeps its own fitted marginal distribution, and the copula
+# supplies the dependence between them. The survey-weighted correlations
+# estimated here are what the copula is fitted to.
+#
+# CONTROLS AT THE TOP OF THE FILE, and one important consequence:
+#   n_sim   = 5000   simulated trips drawn per stratum
+#   n_draws = 3      SIMULATION DRAWS WRITTEN - see below
+#   n_reps  = 200    replicate weights used for the survey variance estimates
+#
+# n_draws IS HARDCODED TO 3 AND DOES NOT READ $ndraws. This is the constraint
+# that ties the whole Stata pipeline to prototype mode. model_wrapper.do sets
+# $ndraws to 100 and then, because proto defaults to 1, overwrites it with 3.
+# If someone sets proto = 0 for a "real" run, the downstream Stata scripts will
+# loop over draws 1..100 looking for files this script only wrote three of, and
+# fail at draw 4. Running at full size therefore requires changing n_draws here
+# and in copula_modeling_projection.R as well as setting proto = 0. Flagged,
+# deliberately not changed.
+#
+# PATHS ARE HARDCODED absolute E: paths for both input and output, so this
+# script ignores the $misc_data_cd / $calib_catch_data_cd globals the Stata
+# side uses and must be edited to run on another machine.
+#
+# INVOKED FROM STATA via `rscript using', not sourced by the R wrapper. The
+# wrapper comment warns that this step "takes a while and will look like it's
+# hung" - 5000 simulated trips x every state x wave x mode stratum, with a
+# copula fitted per stratum, is genuinely slow and produces little output
+# while running.
+################################################################################
+################################################################################
+
 
 # ---- packages ----
 required_pkgs <- c(
@@ -49,6 +114,17 @@ output_dir <- "E:/Lou_projects/flukeRDM/2028_mgt_cycle/calib_catch_draws"
 
 # ---- helper functions ----
 
+#' @title Survey mean plus its replicate-weight realizations
+#' @description Wraps svymean() but keeps the individual REPLICATE estimates,
+#'   not just the point estimate and its standard error. The copula fitting
+#'   needs a sample from the sampling distribution of each stratum's mean in
+#'   order to characterize uncertainty and the correlation structure across
+#'   quantities; the replicate weights supply exactly that. Returns an empty
+#'   numeric vector rather than NULL when a design yields no replicates, so
+#'   callers can handle thin strata without a special case.
+#' @param formula Survey formula naming the variable to average, e.g. ~sf_keep.
+#' @param rep_design A replicate-weights survey design object.
+#' @return The replicate estimates as a numeric vector.
 get_rep_stat <- function(formula, rep_design) {
   out <- survey::svymean(formula, rep_design, return.replicates = TRUE, na.rm = TRUE)
   
