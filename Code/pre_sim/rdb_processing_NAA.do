@@ -240,7 +240,7 @@ gen fishery= "SFSBSB"
 gen common= "BLACK SEA BASS"
 gen state=""
 gen wave=.
-gen metric="2024 Numbers at Age"
+gen metric="2026 Numbers at Age"
 gen source = "2024 Assessment"
 gen stock_abbrev = "SOUTH"
 gen species_itis =167687
@@ -249,6 +249,7 @@ gen str data_version= "`vintage_string'"
 
 duplicates drop 
 capture drop year
+gen year=2026
 sample $ndraws, count
 capture drop draw
 
