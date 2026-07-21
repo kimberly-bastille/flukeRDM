@@ -45,7 +45,7 @@ filestubs<-c("SummerFlounder_historicalNAA",
                         "BlackSeaBassSouth_projectedNAA",
                         "BlackSeaBassSouth_projectedNAA"
 )
-
+NAA_long_holder<-list()
 
 #I'm writing a loop instead of an lapply. Sorry.
 for (file_in in filestubs){
@@ -67,8 +67,9 @@ for (file_in in filestubs){
   validate_naa_data(NAA_long)
   # Save dataframe as Rds
   write_rds(NAA_long, file=output_file_and_path)
-  
   message(file_in, " saved as .Rds")
+  
+  NAA_long_holder[[file_in]]<-NAA_long
   }
   
   
