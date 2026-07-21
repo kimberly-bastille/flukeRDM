@@ -67,7 +67,7 @@ assert year==2024
 drop year
 sample $ndraws, count
 
-save "$misc_data_cd/`SF_historical_filename'.dta", replace
+save "$misc_data_cd/`SF_historical_filename'", replace
 
 
 import delimited using "$misc_data_cd/`sf_project'", clear
@@ -94,7 +94,7 @@ assert year==2026
 drop year
 sample $ndraws, count
 
-save "$misc_data_cd/`SF_projected_filename'.dta", replace
+save "$misc_data_cd/`SF_projected_filename'", replace
 
 /*******************************************************/
 /* SCUP */
@@ -123,7 +123,7 @@ assert year==2024
 drop year
 sample $ndraws, count
 
-save "$misc_data_cd/`Scup_historical_filename'.dta", replace
+save "$misc_data_cd/`Scup_historical_filename'", replace
 
 
 import delimited using "$misc_data_cd/`scup_project'", clear
@@ -149,7 +149,7 @@ assert year==2026
 drop year
 sample $ndraws, count
 
-save "$misc_data_cd/`Scup_projected_filename'.dta", replace
+save "$misc_data_cd/`Scup_projected_filename'", replace
 
 
 
@@ -180,7 +180,7 @@ duplicates drop
 capture drop year
 sample $ndraws, count
 
-save "$misc_data_cd/`BSB_South_historical_filename'.dta", replace
+save "$misc_data_cd/`BSB_South_historical_filename'", replace
 
 
 import delimited using "$misc_data_cd/`bsb_assessN'", clear
@@ -206,7 +206,7 @@ duplicates drop
 capture drop year
 sample $ndraws, count
 
-save "$misc_data_cd/`BSB_North_historical_filename'.dta", replace
+save "$misc_data_cd/`BSB_North_historical_filename'", replace
 
 
 
@@ -238,7 +238,7 @@ duplicates drop
 capture drop year
 sample $ndraws, count
 
-save "$misc_data_cd/`BSB_South_projected_filename'.dta", replace
+save "$misc_data_cd/`BSB_South_projected_filename'", replace
 
 
 import delimited using "$misc_data_cd/`bsb_projectN'", clear
@@ -264,29 +264,4 @@ duplicates drop
 capture drop year
 sample $ndraws, count
 
-save "$misc_data_cd/`BSB_North_projected_filename'.dta", replace
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+save "$misc_data_cd/`BSB_North_projected_filename'", replace
