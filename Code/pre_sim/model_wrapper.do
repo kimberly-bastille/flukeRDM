@@ -151,7 +151,8 @@ loc catch_per_trip1 = 1				// Part 1 of catch per trip
 loc copula_in_R = 1					// Copula model in R
 loc catch_per_trip2 = 1				// Part 2 of catch per trip
 loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
-loc prep_NAA_for_dashboard = 1		 		// Pull Assessment data
+loc prep_NAA_for_dashboard = 1		// Pull Assessment data
+loc push_NAA_to_gdrive =1 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
 loc prep_cpt_for_dashboard= 0		// prep data for dashboard NOT IN WRAPPER. NOT WRITTEN, See Groundfish repo
 loc Rpush_to_gdrive =0 				// Push to google drive in R NOT IN WRAPPER. WRITTEN but not tested 
 loc angler_demogs	=1				// add additonal angler demographics
@@ -162,7 +163,7 @@ loc catch_per_trip_project=1       // Generate projection-year catch-per trip
 
 
 // Prototyping
-local proto = 1
+local proto = 0
 
 if `proto' {
 	global ndraws 3
@@ -182,6 +183,13 @@ if `pull_assessment' {
 if `prep_NAA_for_dashboard' {
 	di "Pulling Assessment data from google"
 	do "$input_code_cd\rdb_processing_NAA.do"
+	}
+if `push_NAA_to_gdrive' {
+	di "Converting dta to Rds and pushing to GDrive"
+	
+			rscript using "$input_code_cd\rdb_convert_and_push_NAA_to_gdrive.R"
+	di "NAA pushed to GDrive"
+
 	}
 
 	
