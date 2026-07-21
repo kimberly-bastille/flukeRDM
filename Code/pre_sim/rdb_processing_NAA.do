@@ -26,17 +26,17 @@ local sf_assess  "J1_2024Summer_Flounder.csv"
 local sf_project  "J1_2026Summer_Flounder.csv"
 
 /*output filenames */
-local SF_projected_filename "SummerFlounder_projected_NAA_`vintage_string'.dta"
-local SF_historical_filename "SummerFlounder_historical_NAA_`vintage_string'.dta"
+local SF_projected_filename "SummerFlounder_projectedNAA_`vintage_string'.dta"
+local SF_historical_filename "SummerFlounder_historicalNAA_`vintage_string'.dta"
 
-local Scup_projected_filename "Scup_projected_NAA_`vintage_string'.dta"
-local Scup_historical_filename "Scup_historical_NAA_`vintage_string'.dta"
+local Scup_projected_filename "Scup_projectedNAA_`vintage_string'.dta"
+local Scup_historical_filename "Scup_historicalNAA_`vintage_string'.dta"
 
-local BSB_South_projected_filename "BlackSeaBass_South_projected_NAA_`vintage_string'.dta"
-local BSB_South_historical_filename "BlackSeaBass_South_historical_NAA_`vintage_string'.dta"
+local BSB_South_projected_filename "BlackSeaBassSouth_projectedNAA_`vintage_string'.dta"
+local BSB_South_historical_filename "BlackSeaBassSouth_historicalNAA_`vintage_string'.dta"
 
-local BSB_North_projected_filename "BlackSeaBass_South_projected_NAA_`vintage_string'.dta"
-local BSB_North_historical_filename "BlackSeaBass_South_historical_NAA_`vintage_string'.dta"
+local BSB_North_projected_filename "BlackSeaBassSouth_projectedNAA_`vintage_string'.dta"
+local BSB_North_historical_filename "BlackSeaBassSouth_historicalNAA_`vintage_string'.dta"
 
 
 set seed 12345
