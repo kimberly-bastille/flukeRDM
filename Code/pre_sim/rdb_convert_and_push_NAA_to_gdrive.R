@@ -73,7 +73,7 @@ for (file_in in SFSBSB_filestubs){
   }
   
 # Ensure we have the right number of files
-stopifnot(length(NAA_long_holder)==length(filestubs))  
+stopifnot(length(NAA_long_holder)==length(SFSBSB_filestubs))  
   
   # Connect to Google Drive
   # NOTE: Relies on cached credentials in .secrets. Will prompt interactive auth if missing or expired.
@@ -94,7 +94,7 @@ stopifnot(length(NAA_long_holder)==length(filestubs))
   
   
 # push the NAA to google drive  
-for (file_in in filestubs){
+for (file_in in SFSBSB_filestubs){
     
     output_file<-glue("{file_in}_{data_vintage_string}.Rds")
     output_file_and_path<- file.path(misc_data_dir,output_file)
