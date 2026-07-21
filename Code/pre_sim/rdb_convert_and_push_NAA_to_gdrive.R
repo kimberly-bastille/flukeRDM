@@ -26,24 +26,24 @@ data_vintage_string<-max(data_vintage_string)
 filestubs_projected<-c("SummerFlounder_projectedNAA",
                         "Scup_projectedNAA",
                         "BlackSeaBassSouth_projectedNAA",
-                        "BlackSeaBassSouth_projectedNAA"
+                        "BlackSeaBassNorth_projectedNAA"
 )
 
 
 filestubs_historical<-c("SummerFlounder_historicalNAA",
              "Scup_historicalNAA",
              "BlackSeaBassSouth_historicalNAA",
-             "BlackSeaBassSouth_historicalNAA"
+             "BlackSeaBassNorth_historicalNAA"
 )
 
 filestubs<-c("SummerFlounder_historicalNAA",
                         "Scup_historicalNAA",
                         "BlackSeaBassSouth_historicalNAA",
-                        "BlackSeaBassSouth_historicalNAA",
+                        "BlackSeaBassNorth_historicalNAA",
                         "SummerFlounder_projectedNAA",
                         "Scup_projectedNAA",
                         "BlackSeaBassSouth_projectedNAA",
-                        "BlackSeaBassSouth_projectedNAA"
+                        "BlackSeaBassNorth_projectedNAA"
 )
 NAA_long_holder<-list()
 
@@ -72,7 +72,8 @@ for (file_in in filestubs){
   NAA_long_holder[[file_in]]<-NAA_long
   }
   
-  
+# Ensure we have the right number of files
+stopifnot(length(NAA_long_holder)==length(filestubs))  
   
   # Connect to Google Drive
   # NOTE: Relies on cached credentials in .secrets. Will prompt interactive auth if missing or expired.
@@ -81,6 +82,8 @@ for (file_in in filestubs){
   # Output folder on google drive
   miscellaneous_path <-file.path("socialsci","RecreationalDST","2028_management_cycle_data",
                                  "flukeRDM","miscellaneous")
+  
+  message("Searching for file path")
   # Get the id of that folder.
   folder_info <- drive_get(
     path = miscellaneous_path,
