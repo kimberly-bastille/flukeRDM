@@ -23,20 +23,20 @@ data_vintage_string<-gsub(".dta","",data_vintage_string)
 data_vintage_string<-max(data_vintage_string)
 
 
-filestubs_projected<-c("SummerFlounder_projectedNAA",
+SFSBSB_filestubs_projected<-c("SummerFlounder_projectedNAA",
                         "Scup_projectedNAA",
                         "BlackSeaBassSouth_projectedNAA",
                         "BlackSeaBassNorth_projectedNAA"
 )
 
 
-filestubs_historical<-c("SummerFlounder_historicalNAA",
+SFSBSB_filestubs_historical<-c("SummerFlounder_historicalNAA",
              "Scup_historicalNAA",
              "BlackSeaBassSouth_historicalNAA",
              "BlackSeaBassNorth_historicalNAA"
 )
 
-filestubs<-c("SummerFlounder_historicalNAA",
+SFSBSB_filestubs<-c("SummerFlounder_historicalNAA",
                         "Scup_historicalNAA",
                         "BlackSeaBassSouth_historicalNAA",
                         "BlackSeaBassNorth_historicalNAA",
@@ -48,7 +48,7 @@ filestubs<-c("SummerFlounder_historicalNAA",
 NAA_long_holder<-list()
 
 #I'm writing a loop instead of an lapply. Sorry.
-for (file_in in filestubs){
+for (file_in in SFSBSB_filestubs){
 
   input_file_and_path <- file.path(misc_data_dir,glue("{file_in}_{data_vintage_string}.dta"))
   
