@@ -35,13 +35,20 @@ local Scup_historical_filename "Scup_historicalNAA_`vintage_string'.dta"
 local BSB_South_projected_filename "BlackSeaBassSouth_projectedNAA_`vintage_string'.dta"
 local BSB_South_historical_filename "BlackSeaBassSouth_historicalNAA_`vintage_string'.dta"
 
-local BSB_North_projected_filename "BlackSeaBassSouth_projectedNAA_`vintage_string'.dta"
-local BSB_North_historical_filename "BlackSeaBassSouth_historicalNAA_`vintage_string'.dta"
+local BSB_North_projected_filename "BlackSeaBassNorth_projectedNAA_`vintage_string'.dta"
+local BSB_North_historical_filename "BlackSeaBassNorth_historicalNAA_`vintage_string'.dta"
 
 
 set seed 12345
 
 /* Process stock assessment */
+* Notes: 
+	*summer flounder and scup NAA data include age0-age7
+	*black sea bass NAA data include age1-age8 and are in 1000s
+	*terminal year estimates are in 1,000s of fish for all species
+
+* We push everything to the dashboard in units of thousands, so we need to scale SF and Scup historical
+	
 /* Summer flounder */
 import delimited using "$misc_data_cd/`sf_assess'", clear
 
@@ -74,7 +81,7 @@ save "$misc_data_cd/`SF_historical_filename'", replace
 import delimited using "$misc_data_cd/`sf_project'", clear
 
 forvalues class =0/7{
-	replace a`class'=`class'/1000
+	replace a`class'=`class'
 	rename a`class' age`class'
 
 }
@@ -105,7 +112,7 @@ import delimited using "$misc_data_cd/`scup_assess'", clear
 
 
 forvalues class =0/7{
-	replace a`class'=`class'/1000
+	replace a`class'=`class'/100
 	rename a`class' age`class'
 
 }
@@ -133,7 +140,7 @@ save "$misc_data_cd/`Scup_historical_filename'", replace
 import delimited using "$misc_data_cd/`scup_project'", clear
 
 forvalues class =0/7{
-	replace a`class'=`class'/1000
+	replace a`class'=`class'
 	rename a`class' age`class'
 
 }
