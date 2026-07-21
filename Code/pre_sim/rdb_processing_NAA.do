@@ -46,8 +46,10 @@ set seed 12345
 import delimited using "$misc_data_cd/`sf_assess'", clear
 
 
-foreach var of varlist a0-a7{
-	replace `var'=`var'/1000
+forvalues class =0/7{
+	replace a`class'=`class'/1000
+	rename a`class' age`class'
+
 }
 
 gen fishery= "SFSBSB"
@@ -64,16 +66,17 @@ gen str data_version= "`vintage_string'"
 
 duplicates drop 
 assert year==2024
-drop year
 sample $ndraws, count
-
+capture drop draw
 save "$misc_data_cd/`SF_historical_filename'", replace
 
 
 import delimited using "$misc_data_cd/`sf_project'", clear
 
-foreach var of varlist a0-a7{
-	replace `var'=`var'/1000
+forvalues class =0/7{
+	replace a`class'=`class'/1000
+	rename a`class' age`class'
+
 }
 
 gen fishery= "SFSBSB"
@@ -91,7 +94,6 @@ gen str data_version= "`vintage_string'"
 duplicates drop 
 assert year==2026
 
-drop year
 sample $ndraws, count
 
 save "$misc_data_cd/`SF_projected_filename'", replace
@@ -102,8 +104,10 @@ save "$misc_data_cd/`SF_projected_filename'", replace
 import delimited using "$misc_data_cd/`scup_assess'", clear
 
 
-foreach var of varlist a0-a7{
-	replace `var'=`var'/1000
+forvalues class =0/7{
+	replace a`class'=`class'/1000
+	rename a`class' age`class'
+
 }
 
 gen fishery= "SFSBSB"
@@ -120,16 +124,18 @@ gen str data_version= "`vintage_string'"
 
 duplicates drop 
 assert year==2024
-drop year
 sample $ndraws, count
+capture drop draw
 
 save "$misc_data_cd/`Scup_historical_filename'", replace
 
 
 import delimited using "$misc_data_cd/`scup_project'", clear
 
-foreach var of varlist a0-a7{
-	replace `var'=`var'/1000
+forvalues class =0/7{
+	replace a`class'=`class'/1000
+	rename a`class' age`class'
+
 }
 
 gen fishery= "SFSBSB"
@@ -146,7 +152,6 @@ gen str data_version= "`vintage_string'"
 
 duplicates drop
 assert year==2026 
-drop year
 sample $ndraws, count
 
 save "$misc_data_cd/`Scup_projected_filename'", replace
@@ -159,8 +164,8 @@ save "$misc_data_cd/`Scup_projected_filename'", replace
 /*******************************************************/
 import delimited using "$misc_data_cd/`bsb_assessS'", clear
 
-forv i = 1/8 {
-    rename v`i' a`i'    
+forvalues i = 1/8 {
+    rename v`i' age`i'    
 }
 
 
@@ -170,23 +175,24 @@ gen state=""
 gen wave=.
 gen metric="2024 Numbers at Age"
 gen source = "2024 Assessment"
-gen stock_abbrev = ""
+gen stock_abbrev = "SOUTH"
 gen species_itis =167687
 gen units = "Thousands"
-gen region  = "SOUTH"
 gen str data_version= "`vintage_string'"
 
 duplicates drop 
 capture drop year
+gen year=2024
 sample $ndraws, count
+capture drop draw
 
 save "$misc_data_cd/`BSB_South_historical_filename'", replace
 
 
 import delimited using "$misc_data_cd/`bsb_assessN'", clear
 
-forv i = 1/8 {
-    rename v`i' a`i'    
+forvalues i = 1/8 {
+    rename v`i' age`i'    
 }
 
 
@@ -196,15 +202,16 @@ gen state=""
 gen wave=.
 gen metric="2024 Numbers at Age"
 gen source = "2024 Assessment"
-gen stock_abbrev = ""
+gen stock_abbrev = "NORTH"
 gen species_itis =167687
 gen units = "Thousands"
-gen region  = "NORTH"
 gen str data_version= "`vintage_string'"
 
 duplicates drop 
 capture drop year
+gen year=2024
 sample $ndraws, count
+capture drop draw
 
 save "$misc_data_cd/`BSB_North_historical_filename'", replace
 
@@ -217,8 +224,8 @@ save "$misc_data_cd/`BSB_North_historical_filename'", replace
 
 import delimited using "$misc_data_cd/`bsb_projectS'", clear
 
-forv i = 1/8 {
-    rename v`i' a`i'    
+forvalues i = 1/8 {
+    rename v`i' age`i'    
 }
 
 
@@ -228,23 +235,23 @@ gen state=""
 gen wave=.
 gen metric="2024 Numbers at Age"
 gen source = "2024 Assessment"
-gen stock_abbrev = ""
+gen stock_abbrev = "SOUTH"
 gen species_itis =167687
 gen units = "Thousands"
-gen region  = "SOUTH"
 gen str data_version= "`vintage_string'"
 
 duplicates drop 
 capture drop year
 sample $ndraws, count
+capture drop draw
 
 save "$misc_data_cd/`BSB_South_projected_filename'", replace
 
 
 import delimited using "$misc_data_cd/`bsb_projectN'", clear
 
-forv i = 1/8 {
-    rename v`i' a`i'    
+forvalues i = 1/8 {
+    rename v`i' age`i'    
 }
 
 
@@ -254,14 +261,15 @@ gen state=""
 gen wave=.
 gen metric="2026 Numbers at Age"
 gen source = "2024 Assessment"
-gen stock_abbrev = ""
+gen stock_abbrev = "NORTH"
 gen species_itis =167687
 gen units = "Thousands"
-gen region  = "NORTH"
 gen str data_version= "`vintage_string'"
 
 duplicates drop 
 capture drop year
+gen year=2026
 sample $ndraws, count
+capture drop draw
 
 save "$misc_data_cd/`BSB_North_projected_filename'", replace
