@@ -158,10 +158,12 @@ loc generate_baseline=1				// Generate baseline-year catch-at-length
 loc catch_at_length_project=1		// Generate projection-year catch-at-length
 loc catch_per_trip_project=1       // Generate projection-year catch-per trip
 
+loc prep_NAA_for_dashboard = 1		// Pull Assessment data
+loc push_NAA_to_gdrive =1 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
 
 
 // Prototyping
-local proto = 1
+local proto = 0
 
 if `proto' {
 	global ndraws 3
@@ -177,6 +179,20 @@ if `pull_assessment' {
 	do "$input_code_cd\get_assessment_from_gdrive.do"
 	}
 
+	/* This code requires you to mount your google drive to D on your computer */
+if `prep_NAA_for_dashboard' {
+	di "Pulling Assessment data from google"
+	do "$input_code_cd\rdb_processing_NAA.do"
+	}
+if `push_NAA_to_gdrive' {
+	di "Converting dta to Rds and pushing to GDrive"
+	
+			rscript using "$input_code_cd\rdb_convert_and_push_NAA_to_gdrive.R"
+	di "NAA pushed to GDrive"
+
+	}
+
+	
 	
 
 // 1) Pull the MRIP data

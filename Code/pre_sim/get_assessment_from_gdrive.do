@@ -28,6 +28,11 @@ foreach s of local filestubs {
 
 local file_list : dir "`google_folder'" files "*"
 
+local i=0
 foreach file of local file_list {
     copy "`google_folder'/`file'" "${misc_data_cd}/`file'", replace
+	local ++i
+
 }
+
+di "`i' assessment and projection files copied"
