@@ -151,8 +151,6 @@ loc catch_per_trip1 = 1				// Part 1 of catch per trip
 loc copula_in_R = 1					// Copula model in R
 loc catch_per_trip2 = 1				// Part 2 of catch per trip
 loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
-loc prep_NAA_for_dashboard = 1		// Pull Assessment data
-loc push_NAA_to_gdrive =1 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
 loc prep_cpt_for_dashboard= 0		// prep data for dashboard NOT IN WRAPPER. NOT WRITTEN, See Groundfish repo
 loc Rpush_to_gdrive =0 				// Push to google drive in R NOT IN WRAPPER. WRITTEN but not tested 
 loc angler_demogs	=1				// add additonal angler demographics
@@ -160,6 +158,8 @@ loc generate_baseline=1				// Generate baseline-year catch-at-length
 loc catch_at_length_project=1		// Generate projection-year catch-at-length
 loc catch_per_trip_project=1       // Generate projection-year catch-per trip
 
+loc prep_NAA_for_dashboard = 1		// Pull Assessment data
+loc push_NAA_to_gdrive =1 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
 
 
 // Prototyping
