@@ -59,13 +59,15 @@ forvalues class =0/7{
 	rename a`class' age`class'
 
 }
+collapse (mean) age*, by(year)
+
 
 gen fishery= "SFSBSB"
 gen common= "SUMMER FLOUNDER"
 gen state=""
 gen wave=.
 gen metric="2024 Numbers at Age"
-gen source = "2024 Assessment"
+gen source = "2025 Assessment"
 gen stock_abbrev = ""
 gen species_itis =172735
 gen units = "Thousands"
@@ -92,7 +94,7 @@ gen common= "SUMMER FLOUNDER"
 gen state=""
 gen wave=.
 gen metric="2026 Projected Numbers At Age"
-gen source = "2024 Assessment"
+gen source = "2025 Assessment"
 gen stock_abbrev = ""
 gen species_itis =172735
 gen units = "Thousands"
@@ -117,6 +119,9 @@ forvalues class =0/7{
 
 
 }
+
+collapse (mean) age*, by(year)
+
 
 gen fishery= "SFSBSB"
 gen common= "SCUP"
@@ -151,7 +156,7 @@ gen common= "SCUP"
 gen state=""
 gen wave=.
 gen metric="2026 Projected Numbers At Age"
-gen source = "2024 Assessment"
+gen source = "2025 Assessment"
 gen stock_abbrev = ""
 gen species_itis =169182
 gen units = "Thousands"
@@ -171,10 +176,13 @@ save "$misc_data_cd/`Scup_projected_filename'", replace
 /* Assessment */
 /*******************************************************/
 import delimited using "$misc_data_cd/`bsb_assessS'", clear
+capture drop year
+gen year=2024
 
 forvalues i = 1/8 {
     rename v`i' age`i'    
 }
+collapse (mean) age*, by(year)
 
 
 gen fishery= "SFSBSB"
@@ -182,15 +190,13 @@ gen common= "BLACK SEA BASS"
 gen state=""
 gen wave=.
 gen metric="2024 Numbers at Age"
-gen source = "2024 Assessment"
+gen source = "2025 Assessment"
 gen stock_abbrev = "SOUTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
 
 duplicates drop 
-capture drop year
-gen year=2024
 sample $ndraws, count
 capture drop draw
 
@@ -198,26 +204,27 @@ save "$misc_data_cd/`BSB_South_historical_filename'", replace
 
 
 import delimited using "$misc_data_cd/`bsb_assessN'", clear
+capture drop year
+gen year=2024
 
 forvalues i = 1/8 {
     rename v`i' age`i'    
 }
 
+collapse (mean) age*, by(year)
 
 gen fishery= "SFSBSB"
 gen common= "BLACK SEA BASS"
 gen state=""
 gen wave=.
 gen metric="2024 Numbers at Age"
-gen source = "2024 Assessment"
+gen source = "2025 Assessment"
 gen stock_abbrev = "NORTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
 
 duplicates drop 
-capture drop year
-gen year=2024
 sample $ndraws, count
 capture drop draw
 
@@ -237,12 +244,13 @@ forvalues i = 1/8 {
 }
 
 
+
 gen fishery= "SFSBSB"
 gen common= "BLACK SEA BASS"
 gen state=""
 gen wave=.
 gen metric="2026 Numbers at Age"
-gen source = "2024 Assessment"
+gen source = "2025 Assessment"
 gen stock_abbrev = "SOUTH"
 gen species_itis =167687
 gen units = "Thousands"
@@ -269,7 +277,7 @@ gen common= "BLACK SEA BASS"
 gen state=""
 gen wave=.
 gen metric="2026 Numbers at Age"
-gen source = "2024 Assessment"
+gen source = "2025 Assessment"
 gen stock_abbrev = "NORTH"
 gen species_itis =167687
 gen units = "Thousands"
