@@ -44,17 +44,18 @@ set seed 12345
 /* Process stock assessment */
 * Notes: 
 	*summer flounder and scup NAA data include age0-age7
-	*black sea bass NAA data include age1-age8 and are in 1000s
-	*terminal year estimates are in 1,000s of fish for all species
+	*black sea bass NAA data include age1-age8 
+* Units 
+	* summer Flounder historical - 1,000s
+	* summer flounder projected individuals  terminal year estimates are in 1,000s of fish for all species
 
-* We push everything to the dashboard in units of thousands, so we need to scale SF and Scup historical
+* We push everything to the dashboard in units of thousands, so we need to scale SF projections, 
 	
 /* Summer flounder */
 import delimited using "$misc_data_cd/`sf_assess'", clear
 
 
 forvalues class =0/7{
-	replace a`class'=`class'/1000
 	rename a`class' age`class'
 
 }
@@ -77,12 +78,12 @@ sample $ndraws, count
 capture drop draw
 save "$misc_data_cd/`SF_historical_filename'", replace
 
-
+/* sf projections are in individuals, so divide by 1000 */
 import delimited using "$misc_data_cd/`sf_project'", clear
 
 forvalues class =0/7{
-	replace a`class'=`class'
 	rename a`class' age`class'
+	replace age`class'=age`class'/1000
 
 }
 
@@ -112,8 +113,8 @@ import delimited using "$misc_data_cd/`scup_assess'", clear
 
 
 forvalues class =0/7{
-	replace a`class'=`class'/100
 	rename a`class' age`class'
+
 
 }
 
@@ -136,11 +137,11 @@ capture drop draw
 
 save "$misc_data_cd/`Scup_historical_filename'", replace
 
-
+/* scup projections are in individuals, so divide by 1000 */
 import delimited using "$misc_data_cd/`scup_project'", clear
 
 forvalues class =0/7{
-	replace a`class'=`class'
+	replace a`class'=`class'/1000
 	rename a`class' age`class'
 
 }
