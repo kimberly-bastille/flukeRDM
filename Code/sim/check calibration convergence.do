@@ -1,5 +1,45 @@
 
-* This script identifies which runs out of 125 for each state-mode combination convereged in the calibration, 
+/*******************************************************************************
+ Script:       check calibration convergence.do
+ Purpose:      Selects the 100 usable calibration draws per state x mode out of
+               the 125 that were generated, and writes that selection out for
+               the projection stage to consume. A draw counts as converged for
+               a species when simulated harvest lands within 500 fish or 5% of
+               the MRIP estimate. Two corrections are applied on top of the
+               recorded convergence flags: draws that met the criterion but
+               were not flagged as converged are reinstated, and for the two
+               state x mode strata that still fall short (NC for-hire and VA
+               for-hire, at 93 and 95 converged draws) the nearest-miss draws
+               are admitted to reach the required count. Those two strata
+               account for very little harvest, which is the stated
+               justification for admitting them.
+ Inputs:       calibrated_model_stats_4_16_26.csv. Two earlier vintages are
+               also named in the script - calibrated_model_stats.xlsx and
+               calibrated_model_stats_4_2_26.xlsx - but each import carries
+               `clear', so only the last one survives. See the note below.
+ Outputs:      calibration_good_draws.xlsx, calibration_good_draws_extras.xlsx
+ Dependencies: Global $iterative_input_data_cd for the export paths. The three
+               import paths are hardcoded absolute paths on a single
+               developer machine (E: drive) and must be edited to run
+               elsewhere. Requires the
+               calibration round (calibration_routine_final.R) to have already
+               produced the model stats file.
+ Dev paths:    3 hardcoded absolute paths to a developer's local machine
+               (E:\), at lines 59-61 (the three `import' statements above).
+ Pipeline:     Manual QA step between the R calibration stage and the
+               projection stage. Not called by model_wrapper.do or by
+               "R code wrapper.R" - it is run by hand.
+
+ IMPORTANT - this is an interactive script, not a batch step:
+               It contains bare `browse' commands (lines below), which open
+               the Stata data editor and halt in a non-interactive session. It
+               is written to be stepped through by a person inspecting results,
+               and the hardcoded thresholds in Section C were arrived at by
+               looking at the data in exactly that way. Do not expect it to run
+               unattended.
+*******************************************************************************/
+
+* This script identifies which runs out of 125 for each state-mode combination convereged in the calibration,
 * meaning that the algorithm was able to tweak the voluntary release/sublegal harvest parameters such that
 * simulated total harvest for that state-mode combination was within 5% or within 500 fish of MRIP estimated harvest. 
 * In some cases the alogorithm did not properly indicate convergence when it was achieved, so first I identify and 
@@ -8,9 +48,19 @@
 * runs that did not converge but were closest in terms of absolute or percent differences in # of harvested fish. 
 * The two strata that did not converge accounted for little harvest. 
 
+/**************************************************/
+/**************************************************/
+/* Section A: Load stats and recompute convergence */
+/**************************************************/
+/**************************************************/
+
+/* Three import statements in a row, each with `clear'. Only the last one
+   survives - the first two vintages of the stats file are discarded
+   immediately. They are kept here as a record of which files were used in
+   earlier passes; to work from an older vintage, comment out the later lines. */
 import excel using "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data\archive\miscellaneous\calibrated_model_stats.xlsx", clear firstrow
 import excel using "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data\calibrated_model_stats_4_2_26.xlsx", clear firstrow
-import delimited using "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data\archive\miscellaneous\calibrated_model_stats_4_16_26.csv", clear 
+import delimited using "E:\Lou_projects\flukeRDM\flukeRDM_iterative_data\archive\miscellaneous\calibrated_model_stats_4_16_26.csv", clear
 
 *drop keep_to_rel* rel_to_keep* p_* 
 replace pct_diff_catch="0" if pct_diff_catch=="NA"
@@ -24,6 +74,12 @@ destring pct_diff_rel, replace
 gen abs_diff_keep=abs(diff_keep)
 gen abs_diff_pct_keep=abs(pct_diff_keep)
 
+/* The convergence criterion: harvest is close enough if it is within 500 fish
+   OR within 5% of the MRIP estimate. The OR matters - the absolute tolerance
+   is what lets small strata pass, where a 5% relative tolerance would be only
+   a handful of fish. These flags are recomputed here rather than trusted from
+   the calibration run because the algorithm sometimes failed to record
+   convergence it had actually achieved. */
 gen sf_converge2=1 if (abs_diff_keep<500 | abs_diff_pct_keep<5) & species=="sf"
 gen bsb_converge2=1 if (abs_diff_keep<500 | abs_diff_pct_keep<5) & species=="bsb"
 gen scup_converge2=1 if (abs_diff_keep<500 | abs_diff_pct_keep<5) & species=="scup"
@@ -41,6 +97,15 @@ gen domain=state+"_"+mode
 tempfile calib_reformat
 save `calib_reformat', replace
 
+/**************************************************/
+/**************************************************/
+/* Section B: Identify strata short of 100 draws  */
+/**************************************************/
+/**************************************************/
+
+/* A draw is usable only if all three species converged on it (tab==1 below,
+   from all_three==3). Strata with fewer than 100 such draws are collected into
+   `fail' so Section C can hand-pick replacements for them. */
 keep mode species state draw all_three sf_convergence bsb_convergence scup_convergence
 collapse (sum) all_three, by(state mode draw)
 gen tab=1 if all_three==3
@@ -78,10 +143,22 @@ order mode species state draw  all_three tot_conv sf_convergence bsb_convergence
 
 distinct domain if tot_conv<3
 
+/**************************************************/
+/**************************************************/
+/* Section C: Hand-admit the nearest-miss draws   */
+/**************************************************/
+/**************************************************/
+
+/* The two thresholds below (-12 percent for NC black sea bass, -600 fish for
+   DE summer flounder) are not derived from any rule. They were read off the
+   sorted data in the `browse' windows above: after sorting by diff_keep, they
+   are the cutoffs that admit just enough near-miss draws to reach 100 for
+   those strata without reaching further into badly-fitting draws. Re-deriving
+   them on a new stats file means repeating that manual inspection. */
 *For NC, all non-converge was bsb
 browse if state=="NC" & species=="bsb" & tot_conv<3
 sort  diff_keep
-gen bsb_convergence1=1 if state=="NC" & mode=="fh" & species=="bsb" & tot_conv==2 & pct_diff_keep>-12 
+gen bsb_convergence1=1 if state=="NC" & mode=="fh" & species=="bsb" & tot_conv==2 & pct_diff_keep>-12
 
 *For NC, most non-converge was sf
 browse
@@ -141,6 +218,17 @@ duplicates drop
 sort state mode  draw
 bysort mode state (draw): gen n=_n
 
+/**************************************************/
+/**************************************************/
+/* Section D: Export the selected draw list       */
+/**************************************************/
+/**************************************************/
+
+/* `n' is the within-stratum sequence number after sorting by draw, so the
+   selection below is "the first 100 usable draws per state x mode", with the
+   original draw ids renamed to draw2 for the projection stage to key on.
+   The extras file holds draws 101-105 for three states only - a side request,
+   not part of the standard 100-draw set. */
 *Extra draws for kim
 preserve
 keep if inlist(state, "RI", "VA", "MD")

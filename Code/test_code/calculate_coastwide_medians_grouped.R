@@ -1,3 +1,35 @@
+################################################################################
+################################################################################
+# Script:       calculate_coastwide_medians_grouped.R
+# Purpose:      Regional-grouping variant of calculate_coastwide_medians.R.
+#               Instead of treating all nine states as independently varying,
+#               it reads a maintained policy template, groups states into
+#               three regions (North, South and New Jersey on its own), and
+#               takes the cross-product over REGIONS. States within a region
+#               move together under a single regional policy ID.
+# Inputs:       Management Measures Template Updated.csv,
+#               output/*.csv (per-state, per-policy model output)
+# Outputs:      coastwide_results_compared2.csv
+# Dependencies: Packages dplyr, readr, stringr, tidyr, here. Requires the
+#               per-state projection runs to already exist in output/.
+# Pipeline:     Development/QA scratch, downstream of the projection stage.
+#               Not called by any wrapper.
+#
+# Why this variant exists: management measures are negotiated regionally, so
+# the independent per-state cross-product in the ungrouped version generates
+# many combinations that could never be adopted. Grouping cuts the
+# combinatorics from 3^9 to (north x south x nj) and restricts the results to
+# packages that are actually on the table.
+#
+# New Jersey is its own region rather than part of North or South. That is a
+# management convention, not an arbitrary split.
+#
+# The policy definitions live in a CSV here rather than as literals in the
+# script, which is the other substantive improvement over the ungrouped
+# version - a new analysis round needs a new CSV, not a code edit.
+################################################################################
+################################################################################
+
 ## Generate coastwide values grouped
 
 policy_lookup <- read_csv(here::here("Data/Data_final/Management Measures Template Updated.csv"))

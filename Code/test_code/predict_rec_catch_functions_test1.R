@@ -1,3 +1,33 @@
+################################################################################
+################################################################################
+# Script:       predict_rec_catch_functions_test1.R
+# Purpose:      Development variant of the projection helper functions - the
+#               per-species simulate/predict routines the projection loop
+#               calls. Defines three functions, one per species.
+# Inputs:       None directly. Reads objects (directed_trips, size data,
+#               calibration parameters) from the calling environment.
+# Outputs:      None. Defines functions.
+# Dependencies: A companion predict_rec_catch_data_read_* script must have run
+#               first to populate the environment. Package data.table.
+# Pipeline:     Development/QA scratch. Not called by any wrapper.
+#
+# HOW THIS DIFFERS FROM predict_rec_catch_functions_test2.R: substantially -
+# roughly 800 lines differ between the two, so they are variants rather than
+# near-copies. The visible structural difference is that this version calls
+# setDT() on the shared inputs at FILE level, outside any function, mutating
+# the caller's objects by reference as a side effect of sourcing. test2 does
+# not, converting inside each function instead. That side effect is worth
+# knowing about: sourcing this file changes objects the caller already holds.
+#
+# Neither variant is the production code. The production projection helpers
+# are in Code/sim/predict_rec_catch_final.R. Note that the two files the
+# production per-state scripts try to source -
+# Code/sim/predict_rec_catch_functions.R and Code/sim/predict_rec_catch.R -
+# are the ancestors of this family, which is why these test variants share
+# their naming.
+################################################################################
+################################################################################
+
 
 #Functions for the main loop of predict_rec_catch
 

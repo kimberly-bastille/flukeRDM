@@ -1,3 +1,27 @@
+################################################################################
+################################################################################
+# Script:       project_rec_catch_final_revised_v3check.R
+# Purpose:      Validation counterpart to project_rec_catch_final_revised_v3.R.
+#               Runs the same refactored projection but instrumented for
+#               checking rather than production - the intent being to confirm
+#               that the restructured code reproduces the results of the
+#               original Code/sim projection path before the refactor is
+#               adopted.
+# Inputs:       Same as project_rec_catch_final_revised_v3.R.
+# Outputs:      Returned to the caller.
+# Dependencies: Packages data.table, fst, readr.
+# Pipeline:     Development/QA scratch. Not called by any wrapper.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (C:\), at line 240 (the L_W_Conversion.csv default argument).
+#
+# Differs from project_rec_catch_final_revised_v3.R in roughly 290 lines, so
+# the two are not interchangeable. Which of the pair is authoritative is not
+# recorded anywhere in the repo; the "check" suffix and the smaller size
+# suggest this one is the narrower validation run, but confirm with the
+# authors before relying on either.
+################################################################################
+################################################################################
+
 
 # project_rec_catch_final.R
 # Efficient projection-year simulation for summer flounder, black sea bass, and scup.

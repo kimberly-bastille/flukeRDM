@@ -1,3 +1,31 @@
+################################################################################
+################################################################################
+# Script:       predict_rec_catch_functions_test2.R
+# Purpose:      Development variant of the projection helper functions - the
+#               per-species simulate/predict routines the projection loop
+#               calls. Defines three functions, one per species, beginning
+#               with simulate_mode_sf() for summer flounder.
+# Inputs:       None directly. Reads objects (directed_trips, size data,
+#               calibration parameters) from the calling environment.
+# Outputs:      None. Defines functions.
+# Dependencies: A companion predict_rec_catch_data_read_* script must have run
+#               first to populate the environment. Package data.table.
+# Pipeline:     Development/QA scratch. Not called by any wrapper. Paired with
+#               predict_rec_catch_data_read_test2.R (the fst-input variant)
+#               and driven by test2_loop.R.
+#
+# HOW THIS DIFFERS FROM predict_rec_catch_functions_test1.R: substantially -
+# roughly 800 lines differ, so these are genuine variants rather than
+# near-copies. The visible structural difference is that this version does NOT
+# call setDT() at file level; each function converts its own inputs instead,
+# so sourcing this file has no side effect on the caller's objects. That is
+# the safer arrangement of the two.
+#
+# Neither variant is the production code. The production projection helpers
+# are in Code/sim/predict_rec_catch_final.R.
+################################################################################
+################################################################################
+
 
 #Functions for the main loop of predict_rec_catch
 

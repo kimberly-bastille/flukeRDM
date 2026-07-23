@@ -1,3 +1,48 @@
+################################################################################
+################################################################################
+# Script:       model_run_DE.R
+# Purpose:      Runs the projection model for Delaware under a saved
+#               regulation scenario, then writes one output CSV.
+#
+#               NEAR-DUPLICATE - SEE model_run_MA.R FOR THE FULL EXPLANATION.
+#               The nine recDST/model_run_<ST>.R scripts share one structure.
+#               model_run_MA.R is documented as the canonical reference and
+#               explains the parts that are not self-evident: how the scenario
+#               CSV becomes named objects via assign(), the cascading
+#               case_when chains that build the regulation calendar, the
+#               leap-year day-of-year alignment, the inches-to-centimetres
+#               conversion and the 254 closed-season sentinel, the exists()
+#               test for statewide vs mode-specific black sea bass rules, and
+#               the parallel-draw setup. None of that is repeated here.
+#
+#               What differs in THIS file: the state code embedded in every
+#               filename and regulation object name (de rather than ma,
+#               e.g. SFdeFH_seas1_op), and the number of seasons the
+#               state defines - 3 summer flounder seasons, 3 black sea bass, 2 scup. It also has three exists() branches.
+#               Everything else, including the 100 draws, 34 workers and seed
+#               915, is identical to model_run_MA.R.
+# Inputs:       regs_<Run_Name>.csv, projected_catch_at_length_new.csv,
+#               L_W_Conversion.csv,
+#               directed_trips_calibration_new_DE.feather,
+#               proj_catch_draws_DE_<draw>.feather,
+#               proj_year_calendar_adjustments_new_DE.csv,
+#               base_outcomes_new_DE_<draw>_<mode>.CSV,
+#               n_choice_occasions_new_DE_<mode>_<draw>.feather,
+#               calibrated_model_stats_new.rds
+# Outputs:      output_DE_<Run_Name>_<timestamp>.csv
+# Dependencies: Sourced by Run_Model.R, which must already have defined
+#               `args`. Packages readr, dplyr, tidyr, feather, data.table,
+#               lubridate, stringr, furrr, future, here.
+# Pipeline:     Terminal stage. Reads the outputs of the Stata pre-sim stage
+#               and the R calibration stage; its own output is read by app.R.
+#
+# KNOWN BROKEN - like every sibling, this script sources
+# Code/sim/predict_rec_catch_functions.R and Code/sim/predict_rec_catch.R,
+# neither of which exists at those paths, so it fails on the first draw. See
+# Run_Model.R's header.
+################################################################################
+################################################################################
+
 ##############################
 ### DE Rec model run  ########
 ##############################
@@ -162,6 +207,7 @@ directed_trips<- directed_trips %>%
 predictions_out10 <- data.frame()
 #future::plan(future::multisession, workers = 36)
 set.seed(915)
+message("model_run_DE.R: starting Delaware projection for scenario '", Run_Name, "', 100 draws across 34 parallel workers. Expect a long run.")
 future::plan(future::multisession, workers = 34)
 get_predictions_out<- function(x){
 #for(x in 1:25){
@@ -284,6 +330,8 @@ get_predictions_out<- function(x){
   
   
   ## Run the predict catch function
+  # BROKEN AS COMMITTED - neither sourced file exists at these paths.
+  # See model_run_MA.R and Run_Model.R for details.
   source(here::here("Code/sim/predict_rec_catch_functions.R"))
   source(here::here("Code/sim/predict_rec_catch.R"))
   

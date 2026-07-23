@@ -1,7 +1,75 @@
+################################################################################
+################################################################################
+# Script:       run_state_model.R
+# Purpose:      Defines run_state_model(), a single parameterized replacement
+#               for the nine near-identical recDST/model_run_<ST>.R scripts.
+#               Same job as those files - build the regulation calendar for
+#               one state under a saved scenario, then run the projection
+#               across draws in parallel - but with the state as an argument
+#               instead of hardcoded, and with the per-state regulation logic
+#               factored out into apply_directed_trips_regs().
+# Inputs:       regs_<Run_Name>.csv, projected_catch_at_length_new.csv,
+#               L_W_Conversion.csv,
+#               directed_trips_calibration_new_<ST>.feather,
+#               proj_catch_draws_<ST>_<draw>.feather,
+#               proj_year_calendar_adjustments_new_<ST>.csv,
+#               base_outcomes_new_<ST>_<draw>_<mode>.CSV,
+#               n_choice_occasions_new_<ST>_<mode>_<draw>.feather,
+#               calibrated_model_stats_new.rds
+# Outputs:      output2_<ST>_<Run_Name>_<timestamp>.csv
+#               (note the "output2_" prefix, distinct from the "output_"
+#               prefix the production model_run_*.R scripts write - so this
+#               file's output does not collide with, or get picked up by,
+#               anything reading the normal outputs)
+# Dependencies: Packages readr, dplyr, tidyr, feather, data.table, lubridate,
+#               stringr, furrr, future, here. Requires
+#               apply_directed_trips_regs() to be defined - see below.
+# Pipeline:     NOT ON ANY ACTIVE CODE PATH. Nothing sources this file and
+#               nothing calls run_state_model(). Run_Model.R sources the nine
+#               recDST/model_run_<ST>.R scripts instead, each of which defines
+#               its own copy of this logic. Read this file as the intended
+#               direction of travel, not as what currently runs.
+#
+# THREE DEFECTS, all left unfixed per this session's scope:
+#   1. apply_directed_trips_regs() is called below but never sourced anywhere
+#      in the repo. It is defined in Code/sim/apply_directed_trips_regs.R,
+#      which no script sources. Calling run_state_model() as committed raises
+#      "could not find function".
+#   2. and 3. The two source() calls further down name
+#      Code/sim/predict_rec_catch_functions.R and Code/sim/predict_rec_catch.R.
+#      Neither exists at that path - the first is only in Code/archive/, the
+#      second does not exist under that name anywhere (Code/sim/ has
+#      predict_rec_catch_final.R). The nine model_run_*.R scripts carry the
+#      same two broken calls, so this is a repo-wide stale reference from a
+#      rename in Code/sim, not a defect unique to this file.
+#
+# Also note two settings that look like leftover test configuration rather
+# than production values: workers = 3 (the model_run_*.R scripts use 34) and
+# a draw range of 1:5 with the 1:100 line commented out directly above it.
+################################################################################
+################################################################################
+
 ##############################
 ### Rec model run (all states)
 ##############################
 
+#' @title Run the projection model for one state
+#' @description Parameterized replacement for the per-state model_run_<ST>.R
+#'   scripts. Materializes the saved regulation scenario as named objects,
+#'   loads the state's catch-at-length, length-weight, directed-trips and
+#'   calibration inputs, applies the state's regulation rules, then maps the
+#'   projection across draws in parallel and writes one CSV.
+#' @param state Two-letter state code, e.g. "MA". Selects every per-state
+#'   input file and filters the multi-state tables.
+#' @param Run_Name Name of the saved regulation scenario; both selects
+#'   saved_regs/regs_<Run_Name>.csv and is stamped onto the output as the
+#'   model label.
+#' @return Invisibly, the elapsed time. The results themselves are written to
+#'   output/output2_<state>_<Run_Name>_<timestamp>.csv as a side effect.
+#' @examples
+#' \dontrun{
+#' run_state_model("MA", "SQ")
+#' }
 run_state_model <- function(state, Run_Name) {
   
   #Run_Name <- args[1]
@@ -11,6 +79,12 @@ run_state_model <- function(state, Run_Name) {
   for (a in seq_len(nrow(saved_regs))) {
     obj_name  <- saved_regs$input[a]
     obj_value <- saved_regs$value[a]
+    # envir = parent.frame() is the important difference from the
+    # model_run_*.R scripts, which run at top level and so can assign()
+    # straight into the global environment. Here the assignment happens inside
+    # a function, so without this the regulation objects would land in the
+    # function's own frame and vanish on return - apply_directed_trips_regs()
+    # looks them up in the caller.
     assign(obj_name, obj_value, envir = parent.frame())
   }
   
@@ -66,10 +140,18 @@ run_state_model <- function(state, Run_Name) {
     )
   
   # ---- State-specific directed trips overwriting ----
+  # DEFECT 1 (see header): apply_directed_trips_regs() is never sourced
+  # anywhere in the repo. It lives in Code/sim/apply_directed_trips_regs.R.
+  # This is where the per-state case_when chains that model_run_*.R inlines
+  # were factored out to - the whole point of this refactor.
   directed_trips <- apply_directed_trips_regs(directed_trips, state)
   
   # ---- Parallel predictions ----
   predictions_out10 <- data.frame()
+  message("run_state_model.R: starting ", state, " projection for scenario '",
+          Run_Name, "'. NOTE: configured for 3 workers and 5 draws - test ",
+          "settings, not the 34 workers / 100 draws the model_run_*.R ",
+          "scripts use.")
   set.seed(915)
   #future::plan(future::multisession, workers = 34)
   future::plan(future::multisession, workers = 3)
@@ -173,6 +255,7 @@ run_state_model <- function(state, Run_Name) {
     scup_size_data2 <- scup_size_data %>% dplyr::filter(draw == x) %>% dplyr::select(-draw)
     
     # ---- Run predict catch ----
+    # DEFECTS 2 and 3 (see header): neither file exists at these paths.
     source(here::here("Code/sim/predict_rec_catch_functions.R"))
     source(here::here("Code/sim/predict_rec_catch.R"))
     

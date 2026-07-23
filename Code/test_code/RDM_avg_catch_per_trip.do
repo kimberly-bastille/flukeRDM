@@ -1,3 +1,34 @@
+/*******************************************************************************
+ Script:       RDM_avg_catch_per_trip.do
+ Purpose:      Computes a post-hoc adjustment scalar to correct already-
+               published RDM output for a later MRIP data release. The FY2026
+               groundfish RDM was run on one vintage of MRIP data; MRIP then
+               released preliminary 2025 wave 5 and revised 2025 wave 4 data
+               in January 2026. Rather than re-running the entire model, this
+               script recomputes total catch both ways - using the data the
+               RDM actually consumed, and using the newer data - at the RDM's
+               own strata, and takes the ratio.
+
+               Total catch is built the same way the model builds it: total
+               directed trips at wave x month x kind-of-day x mode, multiplied
+               by mean catch-per-trip at wave x mode. Doing it identically on
+               both vintages is what makes the ratio interpretable as a data
+               revision effect rather than a method difference.
+ Inputs:       MRIP trip and catch files for the two data vintages.
+ Outputs:      The adjustment scalars, for manual application to existing RDM
+               output.
+ Dependencies: MRIP data for both vintages must be available.
+ Pipeline:     Development/QA scratch, run after a model round. Not called by
+               any wrapper.
+ Dev paths:    1 hardcoded absolute path to a developer's local machine
+               (C:\), at line 54.
+
+ Note the cross-project origin: the header refers to the GROUNDFISH RDM's
+ FY2026 cycle, but the file lives in the flukeRDM repo. The two projects share
+ developers and this approach; treat the specific year and wave references as
+ describing that groundfish round, not this repo's calibration year.
+*******************************************************************************/
+
 
 
 * We originally used MRIP data from (year==2025 & inlist(wave, 1, 2, 3, 4)) | (year==2024 & inlist(wave, 5, 6)) for the groundfish RDM in FY2026's mgt. cycle. 

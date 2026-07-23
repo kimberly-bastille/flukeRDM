@@ -1,5 +1,71 @@
 
 
+/*******************************************************************************
+ Script:       model_wrapper.do
+ Purpose:      Master wrapper for the Stata half of the summer flounder /
+               black sea bass / scup (SFSBSB) recreational decision model.
+               Does three things: sets every global the pipeline depends on
+               (data years, calibration and projection periods, federal
+               holidays, seed, draw count, directory paths), then runs the
+               calibration and projection steps in order, each gated by its
+               own on/off toggle. Nothing here processes data itself.
+ Inputs:       None directly. Sets the globals every downstream script reads.
+ Outputs:      None directly. Writes a session log to
+               sf_model_wrapper_log_<date>.smcl. All data outputs come from
+               the scripts it calls.
+ Dependencies: Global $developer must be set BEFORE running, and the working
+               directory must already be the project root so that `here'
+               resolves correctly (the header comment below describes the
+               profile.do trick for this). Requires the user-written commands
+               xsvmat, gammafit, grc1leg, rscript and here.  Some R scripts that a
+               are called will copy files from Google Drive or write files to 
+			   Google Drive.  If you have not already connected to google drive, 
+			   run "Code/helpers/googledrivesetup.R".  If you do not the
+			   the R scripts that use googledrive will fail ungracefully.
+ Pipeline:     Entry point 1 of 3, invoked as
+                   do Code/pre_sim/model_wrapper.do
+               Runs 17 scripts across steps 0-9. It does NOT chain to the R
+               stage - see the note on step 10 below - so an operator must
+               afterwards run "Code/sim/R code wrapper.R" by hand, and later
+               Run_Model.R for projections.
+
+ THINGS THAT MUST BE UPDATED EVERY YEAR (all in the "Adjust globals" block):
+   $yr_wvs, $yearlist, $wavelist       which MRIP files to read
+   $calibration_year, _num             which year is being calibrated
+   $projection_catch_per_trip_years    the rolling 12 waves for projection
+   $calibration_start_date / _end_date
+   $projection_date_start / _end
+   $fed_holidays, $fed_holidays_y2     MRIP treats federal holidays as
+                                       weekend days for effort estimation
+   $leap_yr_days
+   $inflation_expansion                CPI factor applied to the 2022 trip
+                                       cost survey
+ Additionally set_regulations.do, called from within step 2, holds the season
+ and bag/size limits and must be reviewed each year.
+
+ THREE TOGGLES GATE NOTHING (defined in EXECUTION CONTROL, no matching `if'
+ block anywhere in this file):
+   prep_cpt_for_dashboard = 0   self-labeled NOT WRITTEN; the Groundfish repo
+                                has the equivalent
+   Rpush_to_gdrive        = 0   the script it would call,
+                                rdb_catch_per_trip_to_drive.R, EXISTS but was
+                                never wired up; self-labeled written-not-tested
+   angler_demogs          = 1   ON by default with NO explanatory comment.
+                                GroundfishRDM has an identically named toggle
+                                that does gate a script; here nothing runs.
+                                This is the one worth resolving - a reader
+                                would reasonably assume demographics are being
+                                added when they are not. (Angler demographics
+                                ARE built, but by
+                                calibration_catch_per_trip_part2.do, which
+                                this toggle does not control.)
+
+ PROTOTYPE MODE IS ON BY DEFAULT. `proto' = 1 overwrites $ndraws from 100 to
+ 3. Running this file exactly as committed therefore produces a 3-draw test
+ run, not a production run. GroundfishRDM defaults the same toggle to 0. Set
+ proto = 0 for a real run.
+*******************************************************************************/
+
 /**** SFSBSB RDM code wrapper ****/
 /* This uses the user written command here to set directories*/
 /* It is not as good as R's version. Before running this code, you must change directories into project directory 
@@ -42,6 +108,10 @@ and then cd "$flukeRDMdir" right before running this code
 	*/
 	
 	
+/* Variable-name abbreviation is enabled repo-wide. Downstream scripts rely on
+   it (e.g. `drop common _merge' to drop common_dom). Worth knowing when
+   reading any varlist: a name may be a prefix of the real variable. Stata
+   still prefers an exact match when one exists. */
 set varabbrev on
 
 
@@ -119,6 +189,15 @@ global figure_cd  "${sfdatadir}\figures"
 
 global log_dir "${input_code_cd}/logs" 
 
+/* BUG, flagged not fixed: the second mkdir below names $calib_catch_draws_cd,
+   which is never defined - the global set above is $calib_catch_data_cd.
+   ($calib_catch_draws_cd is the GroundfishRDM spelling, so this is a
+   copy-paste artifact.) The unset global expands to nothing, so the command
+   is a bare `mkdir', and `capture' swallows the resulting error silently.
+   Net effect: the calib_catch_draws directory is NOT created here. Runs
+   succeed anyway whenever the directory already exists, which is why this has
+   gone unnoticed; a genuinely fresh checkout would fail later, at the first
+   save into $calib_catch_data_cd. */
 /* make directories if necessary */
 capture mkdir $misc_data_cd
 capture mkdir $calib_catch_draws_cd
@@ -151,15 +230,29 @@ loc catch_per_trip1 = 1				// Part 1 of catch per trip
 loc copula_in_R = 1					// Copula model in R
 loc catch_per_trip2 = 1				// Part 2 of catch per trip
 loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
+/* The next three toggles gate NOTHING - there is no matching `if' block for
+   any of them below. See the header for details. angler_demogs in particular
+   is ON and undocumented; demographics are in fact produced by
+   calibration_catch_per_trip_part2.do, which this toggle does not control. */
 loc prep_cpt_for_dashboard= 0		// prep data for dashboard NOT IN WRAPPER. NOT WRITTEN, See Groundfish repo
-loc Rpush_to_gdrive =0 				// Push to google drive in R NOT IN WRAPPER. WRITTEN but not tested 
+loc Rpush_to_gdrive =0 				// Push to google drive in R NOT IN WRAPPER. WRITTEN but not tested
 loc angler_demogs	=1				// add additonal angler demographics
 loc generate_baseline=1				// Generate baseline-year catch-at-length
 loc catch_at_length_project=1		// Generate projection-year catch-at-length
+/* Unlike the toggles above, this one is a META-TOGGLE: it gates four scripts
+   as a single unit (step 9a-9d). They cannot be run or skipped individually
+   without editing the block. GroundfishRDM toggles the equivalent scripts
+   separately. */
 loc catch_per_trip_project=1       // Generate projection-year catch-per trip
 
 
 
+/* Prototype mode. ON as committed - see the header. This silently overrides
+   the $ndraws 100 set above with 3, which makes a full pass through the
+   pipeline finish in a fraction of the time but produces results too noisy to
+   use. Note also that the R side does not read $ndraws at all: "R code wrapper.R"
+   sets its own n_simulations (currently 10), so changing proto here does not
+   keep the two halves of the pipeline in step. */
 // Prototyping
 local proto = 1
 
@@ -296,6 +389,23 @@ if `catch_per_trip_project'{
 }
 
 // 10) Run the projection loop in R
+
+/* Step 10 is a heading with no code beneath it. This is the wrapper-chaining
+   gap: GroundfishRDM's Stata wrapper calls its R wrapper here as a final
+   gated step, so the two halves cannot be run out of order. flukeRDM's
+   equivalent call was never written, which is why the pipeline has three
+   independent entry points that an operator must sequence by hand:
+       1. this file
+       2. Rscript "Code/sim/R code wrapper.R"
+       3. Rscript Run_Model.R <Run_Name>   (currently broken - see its header)
+   Closing this gap is in scope for the next flukeRDM development pass. */
+
+display "model_wrapper.do: Stata pre-simulation stage complete. NEXT STEP IS MANUAL - run Code/sim/'R code wrapper.R' to perform the R calibration; this wrapper does not call it."
+
+
+if (`proto'==1) {
+	display "Prototyping option set on. ndraws global set to $ndraws"
+}
 
 
 

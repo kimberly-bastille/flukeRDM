@@ -1,3 +1,21 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      calibrate_rec_catch1.R
+# Purpose:     Calibration PASS 1 - the trip simulation WITH harvest/release
+#              reallocation applied.
+# Superseded by: Code/sim/calibrate_rec_catch1_final.R
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+################################################################################
+################################################################################
+
 
 
 #This is the calibration-year trip simulation WITH any adjustments for illegal harvest or voluntary release

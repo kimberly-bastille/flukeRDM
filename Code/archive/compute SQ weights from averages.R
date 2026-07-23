@@ -1,3 +1,25 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      compute SQ weights from averages.R
+# Purpose:     Computes total projected harvest and discard WEIGHTS under status-quo
+#              regulations, using average weight per harvested and per discarded
+#              fish rather than a length-weight relationship applied fish by fish.
+# Superseded by: the length-weight conversion now applied inside the projection (L_W_Conversion.csv)
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+#
+# Dev paths: 2 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 26 and 27.
+################################################################################
+################################################################################
+
 
 
 # This file compute total projected harvest/discard weights under under status-quo regulations,  

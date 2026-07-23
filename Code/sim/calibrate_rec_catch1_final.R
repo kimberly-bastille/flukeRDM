@@ -1,3 +1,61 @@
+################################################################################
+################################################################################
+# Script:       calibrate_rec_catch1_final.R
+# Purpose:      Calibration PASS 1 simulation - the same calibration-year trip
+#               simulation as PASS 0, but with a reallocation step applied.
+#               Where PASS 0 assumes perfect regulatory compliance, this
+#               version converts a proportion p of modeled releases into
+#               harvest (sublegal fish kept) or a proportion of modeled
+#               harvest into releases (legal fish voluntarily released),
+#               depending on which direction the model missed MRIP.
+#               calibration_routine_final.R sources this file repeatedly,
+#               varying p, until simulated harvest lands within tolerance.
+# Inputs:       calib_catch_draws_<ST>_<i>.fst, baseline_catch_at_length.csv,
+#               L_W_Conversion.csv (read from a hardcoded absolute path), and
+#               the MRIP totals, read via the calling environment.
+# Outputs:      None written directly. Returns results to the search routine,
+#               which persists calibrated_model_stats, base_outcomes and
+#               n_choice_occasions files.
+# Dependencies: SOURCED, NOT CALLED. calibration_routine_final.R sources this
+#               file inside its search loop and passes the current
+#               reallocation settings through GLOBAL VARIABLES
+#               (rel_to_keep_<sp>, p_rel_to_keep_<sp> and siblings, written by
+#               that script's push_globals()). There is no argument-passing
+#               contract between the two files. Packages data.table, fst.
+# Pipeline:     Inner loop of R calibration STEP 2. Sibling of
+#               calibrate_rec_catch0_optimized.R, from which it inherits
+#               safe_divide(), calc_prob_trip() and build_compare_table()
+#               VERBATIM - those three functions are duplicated across the two
+#               files rather than shared. See those definitions in
+#               calibrate_rec_catch0_optimized.R for their documentation;
+#               only what is new here is documented below.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (C:\), at line 499 (the L_W_Conversion.csv read).
+#
+# THE UTILITY ADJUSTMENT - the subtlest thing in this file.
+# Reallocation creates a conflict between two uses of the same fish. A fish
+# moved from kept to released must count as RELEASED in the harvest and
+# discard totals that get compared to MRIP - that is the whole point. But the
+# angler in the simulation decided to take the trip believing they would keep
+# it, so for the purposes of trip UTILITY it must still count as kept;
+# otherwise reallocating fish would silently change anglers' trip-taking
+# decisions and the calibration would be adjusting two things at once.
+# The file therefore carries two parallel sets of columns:
+#   tot_keep_<sp>_new  / tot_rel_<sp>_new   accounting - what MRIP is compared to
+#   tot_keep_<sp>_util / tot_rel_<sp>_util  behavioral - what enters utility
+# This applies to summer flounder and black sea bass only. Scup enters the
+# utility function as TOTAL CATCH (sqrt_scup_catch), so moving a scup between
+# kept and released does not change utility and no adjustment is needed.
+#
+# THE SUBLEGAL WINDOW. Converting releases to harvest is not unrestricted: the
+# eligible fish are released fish within `floor_sublegal` inches BELOW the
+# minimum size, on the reasoning that an angler who keeps an illegal fish
+# keeps a near-legal one, not a tiny one. The window starts at 3 inches and
+# the search routine widens it to 4 when a stratum runs out of eligible fish
+# (see needs_floor4_rerun() in calibration_routine_final.R).
+################################################################################
+################################################################################
+
 # calibration-year trip simulation WITH optional trip-level harvest/release reallocation
 # optimized for speed/efficiency while retaining fish-level expansion
 # utility adjustment: for fluke and black sea bass, fish reallocated from kept->released
@@ -5,6 +63,11 @@
 # scup enters utility only as total catch, so no keep/release utility adjustment is needed.
 
 
+# The next three functions - parse_date_any(), safe_divide() and
+# calc_prob_trip() - plus build_compare_table() below are duplicated verbatim
+# from calibrate_rec_catch0_optimized.R (and parse_date_any() also from
+# "R code wrapper.R"). They are documented in those files; a change made here
+# will NOT propagate to the copies.
 parse_date_any <- function(x) {
   data.table::as.IDate(as.Date(
     x,
@@ -193,6 +256,50 @@ prop_sub_kept_bsb <- 0
 n_legal_rel_bsb <- 0L
 prop_legal_rel_bsb <- 0
 
+#' @title Apply bag and size limits, then reallocate harvest or releases
+#' @description The PASS 1 counterpart of simulate_species() in
+#'   calibrate_rec_catch0_optimized.R. Expands each trip's catch to individual
+#'   fish, draws lengths, applies the minimum size and the bag limit in
+#'   encounter order - and then moves a proportion of the outcome across the
+#'   kept/released line to close the gap against MRIP.
+#'
+#'   Two directions, mutually exclusive:
+#'     rel_to_keep - the model under-harvested. A proportion p_rel_to_keep of
+#'       RELEASED fish lying within `floor_sublegal` inches below the minimum
+#'       size is reclassified as kept. Restricting to near-legal fish is a
+#'       behavioral assumption: an angler who keeps an undersized fish keeps
+#'       one just short of legal, not an obviously tiny one. A stratum can
+#'       exhaust this pool, which is what triggers the wider-window re-run.
+#'     keep_to_rel - the model over-harvested. A proportion p_keep_to_rel of
+#'       KEPT fish is reclassified as released, representing voluntary
+#'       release of legal fish. all_keep_to_rel short-circuits the degenerate
+#'       case where every kept fish is converted.
+#'
+#'   When utility_adjust is TRUE the function maintains the separate _util
+#'   columns described in the file header, so that reallocation changes the
+#'   harvest accounting without disturbing anglers' simulated trip decisions.
+#' @param catch_dt Trip-level data.table keyed on date, mode, tripid and
+#'   catch_draw, carrying catch counts and the regulations in force.
+#' @param catch_col,bag_col,min_col Column names holding this species' catch
+#'   count, bag limit and minimum size.
+#' @param size_dt Catch-at-length lookup with `length` and `fitted_prob`.
+#' @param species_prefix One of "sf", "bsb", "scup"; determines output column
+#'   names.
+#' @param floor_sublegal How many inches below the minimum size a released
+#'   fish may be and still be eligible for conversion to harvest. 3 normally,
+#'   widened to 4 when a stratum runs short.
+#' @param rel_to_keep,keep_to_rel Direction flags; at most one is 1.
+#' @param p_rel_to_keep,p_keep_to_rel The proportion to convert, in [0, 1].
+#'   Supplied by the search routine through the global environment.
+#' @param all_keep_to_rel Flag for the boundary case p = 1 on keep_to_rel.
+#' @param utility_adjust Whether to maintain the separate utility columns.
+#'   TRUE for summer flounder and black sea bass, FALSE for scup, which enters
+#'   utility only as total catch.
+#' @return A list with `trip` (the per-trip kept/released/weight columns, plus
+#'   the utility columns when requested) and four diagnostics the search uses:
+#'   n_sub_kept, n_legal_rel, prop_sub_kept and prop_legal_rel - the counts and
+#'   proportions actually converted, which can fall short of what was
+#'   requested when the eligible pool runs out.
 simulate_species_realloc <- function(catch_dt,
                                      catch_col,
                                      bag_col,

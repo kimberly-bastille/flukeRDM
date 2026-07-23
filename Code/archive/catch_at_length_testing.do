@@ -1,3 +1,23 @@
+/******************************************************************************
+ ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+ 
+ Script:      catch_at_length_testing.do
+ Purpose:     Exploratory work on baseline observed catch-at-length. Reads
+              baseline_observed_catch_at_length.csv and works through catch-at-
+              length construction; a scratch predecessor of the production
+              catch-at-length scripts.
+ Superseded by: Code/pre_sim/calibration_catch_at_length.do
+ 
+ This file is retained for reference and is not called by any wrapper,
+ script or app in this repository. It is NOT maintained: paths, data
+ formats and modeling choices in it may be years out of date, and it
+ should not be used to understand how the pipeline currently behaves.
+ Per the documentation session's scope, archived files received a header
+ only - no inline documentation, and no code was changed.
+ Dev paths:    1 hardcoded absolute path to a developer's local machine
+               (C:\), at line 724.
+******************************************************************************/
+
 
 
 import delimited using "$input_data_cd/baseline_observed_catch_at_length.csv", clear 

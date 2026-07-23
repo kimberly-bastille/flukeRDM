@@ -1,4 +1,50 @@
 
+################################################################################
+################################################################################
+# Script:       predict_rec_catch_final.R
+# Purpose:      Projection-year simulation. Re-runs the trip model under the
+#               PROJECTION year's regulations and catch-at-length, carrying
+#               forward the reallocation proportions the calibration settled
+#               on, and compares the result to the calibration-year baseline.
+#               The output is the difference table the model exists to
+#               produce: for each state, mode and species, projected versus
+#               baseline harvest, releases, dead discards and angler welfare,
+#               with absolute and percent differences.
+#
+#               Carrying the calibrated proportions forward is the central
+#               modeling assumption. The calibration inferred how far angler
+#               behavior departs from strict compliance in the base year; the
+#               projection assumes that same departure persists under the new
+#               regulations, rather than re-estimating it.
+# Inputs:       projected_catch_at_length.csv, calibrated_model_stats.fst,
+#               L_W_Conversion.csv, proj_catch_draws_<ST>_<i>.fst,
+#               base_outcomes_<ST>_<MODE>_<DRAW>.fst,
+#               n_choice_occasions_<ST>_<MODE>_<DRAW>.fst
+# Outputs:      The final_compare table of projected-vs-baseline differences.
+# Dependencies: Objects iterative_input_data_cd and input_data_cd from the
+#               calling environment - "R code wrapper.R" sources this file as
+#               STEP 3. Packages data.table, fst, readr.
+# Pipeline:     Last of the three R steps. Deliberately mirrors
+#               calibrate_rec_catch1_final.R so that baseline and projection
+#               are computed the same way and their difference is meaningful.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (E:\), at line 61.
+#
+# NOTE - THE CONFIGURATION BLOCK BELOW IS SET FOR TESTING, NOT PRODUCTION.
+# states is c("MA", "RI") rather than all nine, and n_simulations is 3. It
+# also RE-DECLARES n_simulations, overwriting whatever "R code wrapper.R" set
+# (10) - so sourcing this file silently changes that object for anything that
+# runs afterwards in the same session. iterative_input_data_cd is likewise
+# re-hardcoded here to an absolute E: path, overriding the caller's value.
+# Left as-is per this session's scope.
+#
+# Duplicated helpers: safe_divide(), calc_prob_trip() and parse_date_any() are
+# verbatim copies of the definitions in calibrate_rec_catch0_optimized.R /
+# calibrate_rec_catch1_final.R. Only the helpers new to this file are
+# documented below.
+################################################################################
+################################################################################
+
 # Efficient projection-year simulation for summer flounder, black sea bass, and scup.
 # Designed to mirror calibrate_rec_catch1_final.R while carrying forward calibrated
 # reallocation parameters from calibrated_model_stats.csv.
@@ -34,6 +80,14 @@ safe_divide <- function(num, den) {
   ifelse(is.na(den) | den == 0, NA_real_, num / den)
 }
 
+#' @title First non-missing value, or a fallback
+#' @description Used when pulling a scalar attribute out of a filtered table
+#'   that may be empty or may lead with NA - for instance a discard mortality
+#'   rate for a stratum with no records. Returns the supplied default rather
+#'   than propagating NA into a rate calculation.
+#' @param x Vector to take the first usable value from.
+#' @param default Value returned when x is empty or starts with NA.
+#' @return A length-one value.
 first_non_na <- function(x, default) {
   if (length(x) == 0L || is.na(x[1])) default else x[1]
 }
@@ -54,6 +108,15 @@ parse_date_any <- function(x) {
     tryFormats = c("%d%b%Y", "%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y")))
 }
 
+#' @title Read the first .fst file that exists from a list of candidates
+#' @description Tolerates the repo's inconsistent file naming. The same
+#'   logical input has been written under more than one path convention across
+#'   pipeline vintages (with and without a "_new" infix, in different
+#'   subfolders), so callers pass every plausible path and take whichever is
+#'   present. Errors listing all candidates when none exist, which is more
+#'   useful than a bare "file not found".
+#' @param path_candidates Character vector of paths to try, in priority order.
+#' @return The first existing file, read as a data.table.
 read_fst_any <- function(path_candidates) {
   path <- path_candidates[file.exists(path_candidates)][1]
   if (is.na(path)) stop("None of these files exist: ", paste(path_candidates, collapse = "; "))
@@ -67,6 +130,21 @@ months_dt <- data.table::data.table(month = 1:12)
 
 ## Main functions
 # Pull common input data 
+#' @title Load the inputs shared across every state and draw
+#' @description Reads the projected catch-at-length lookup, the calibrated
+#'   reallocation statistics and the length-weight conversions once, so the
+#'   per-draw loop does not re-read them. This hoisting is the main
+#'   performance difference between this version and the archived predecessor
+#'   in Code/archive.
+#' @param iterative_input_data_cd Directory holding simulation-generated data.
+#' @param states State codes to retain; NULL keeps all.
+#' @param draws Draw numbers to retain.
+#' @param size_lookup_file Filename of the projected catch-at-length table.
+#' @param calib_file Path to the calibrated model statistics, which carry the
+#'   reallocation proportions the projection reuses.
+#' @param lw_file Path to the length-weight conversion table.
+#' @return A named list of the shared tables, to be passed into the per-draw
+#'   projection.
 read_projection_common_inputs <- function(iterative_input_data_cd,
                                           states,
                                           draws,
@@ -154,6 +232,26 @@ read_projection_common_inputs <- function(iterative_input_data_cd,
 # Simulate trip-level outcomes
 # One generic simulator replaces the old simulate_mode_sf/bsb/scup functions.
 # Returns trip totals and long length counts at the same time.
+#' @title Simulate one species under the projection-year regulations
+#' @description The projection counterpart of simulate_species_realloc() in
+#'   calibrate_rec_catch1_final.R, and deliberately parallel to it: expand
+#'   catch to individual fish, draw lengths from the PROJECTION year's
+#'   catch-at-length distribution, apply the projection year's minimum size
+#'   and bag limit in encounter order, then apply the reallocation
+#'   proportions inherited from the calibration rather than searching for new
+#'   ones.
+#'
+#'   Keeping the two functions structurally identical is what makes the
+#'   baseline-versus-projection difference attributable to the regulation
+#'   change rather than to a difference in method.
+#' @param catch_dt Trip-level catch and regulations for one stratum and draw.
+#' @param catch_col,bag_col,min_col Column names for this species' catch
+#'   count, projection-year bag limit and projection-year minimum size.
+#' @param size_dt Projection-year catch-at-length lookup.
+#' @param species_prefix One of "sf", "bsb", "scup".
+#' @return Per-trip kept, released and weight columns for this species, with
+#'   the separate utility columns maintained for summer flounder and black sea
+#'   bass as in the calibration.
 simulate_species_project <- function(catch_dt,
                                      size_dt,
                                      calib_row,

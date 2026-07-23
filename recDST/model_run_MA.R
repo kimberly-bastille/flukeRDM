@@ -1,3 +1,51 @@
+################################################################################
+################################################################################
+# Script:       model_run_MA.R
+# Purpose:      Runs the projection model for Massachusetts under a saved
+#               regulation scenario. Translates the scenario's season
+#               open/close dates, bag limits and size limits into a
+#               day x mode regulation calendar, loads the state's projected
+#               catch-at-length, catch draws and calibration-year outcomes,
+#               and runs 100 draws of the projection in parallel, writing one
+#               output CSV.
+#
+#               THIS FILE IS THE CANONICAL REFERENCE for the nine
+#               recDST/model_run_<ST>.R scripts. The other eight are
+#               near-identical copies differing only in the state code
+#               embedded in filenames and regulation object names (SFma* vs
+#               SFnj* and so on) and in how many seasons each state defines.
+#               Read this file to understand any of them.
+# Inputs:       regs_<Run_Name>.csv, projected_catch_at_length_new.csv,
+#               L_W_Conversion.csv,
+#               directed_trips_calibration_new_MA.feather,
+#               proj_catch_draws_MA_<draw>.feather,
+#               proj_year_calendar_adjustments_new_MA.csv,
+#               base_outcomes_new_MA_<draw>_<mode>.CSV,
+#               n_choice_occasions_new_MA_<mode>_<draw>.feather,
+#               calibrated_model_stats_new.rds
+# Outputs:      output_MA_<Run_Name>_<timestamp>.csv
+# Dependencies: Sourced by Run_Model.R, which must already have defined
+#               `args`. Packages readr, dplyr, tidyr, feather, data.table,
+#               lubridate, stringr, furrr, future, here.
+# Pipeline:     Terminal stage. Reads the outputs of the Stata pre-sim stage
+#               and the R calibration stage; its own output is read by app.R.
+#
+# KNOWN BROKEN - see the source() calls inside get_predictions_out(). Both
+# named files are missing from Code/sim/, so this script fails on the first
+# draw. Details are commented at that line and in Run_Model.R's header.
+#
+# Naming convention for the scenario objects: the regulation values arrive as
+# rows of regs_<Run_Name>.csv and are assign()ed into the environment by name,
+# so identifiers like SFmaFH_seas1_op appear below with no visible definition.
+# They decompose as <SPECIES><state><MODE>_<field>:
+#   SF / BSB / SCUP   species
+#   ma                state
+#   FH / PR / SH      for-hire, private, shore
+#   seas<n>_op/_cl    season n open / close date
+#   <n>_bag / <n>_len season n bag limit / minimum length in INCHES
+################################################################################
+################################################################################
+
 ##############################
 #### MA Rec model run  ########
 ##############################
@@ -6,11 +54,24 @@ Run_Name <- args[1]
 
 saved_regs<- read.csv(here::here(paste0("saved_regs/regs_", Run_Name, ".csv")))
 
+################################################################################
+################################################################################
+# Section A: Materialize the scenario as named objects
+################################################################################
+################################################################################
+
+# Each row of the scenario CSV becomes a variable named by its `input` column.
+# This is why the regulation identifiers used later have no explicit
+# assignment anywhere in the file - they are created dynamically here. Two
+# consequences: a scenario missing a row silently leaves that object
+# undefined until something references it (which is what the exists() test
+# further down is guarding against), and this loop re-reads the full CSV even
+# though Run_Model.R already filtered it to this state.
 for (a in seq_len(nrow(saved_regs))) {
   # Extract name and value
   obj_name <- saved_regs$input[a]
   obj_value <- saved_regs$value[a]
-  
+
   # Assign to object in the environment
   assign(obj_name, obj_value)
 }
@@ -50,9 +111,29 @@ directed_trips<-feather::read_feather(file.path(data_path, paste0("directed_trip
   tibble::tibble() %>%
   dplyr::select(mode, date, draw, bsb_bag, bsb_min, fluke_bag,fluke_min, scup_bag, scup_min,
                 bsb_bag_y2, bsb_min_y2, fluke_bag_y2,fluke_min_y2, scup_bag_y2, scup_min_y2) %>% 
-  dplyr::mutate(date_adj = lubridate::dmy(date), 
-                date_adj = lubridate::yday(date_adj), 
+  # Regulations are compared on day-of-year rather than on dates, because the
+  # scenario's season boundaries and the calibration calendar can fall in
+  # different years. The `> 60 ~ date_adj - 1` step is a leap-year alignment:
+  # day 60 is Feb 29 in a leap year, so every later day-of-year is shifted
+  # back by one to line up with a non-leap calendar. Without it, seasons in a
+  # leap calibration year would be offset by a day against the projection year.
+  dplyr::mutate(date_adj = lubridate::dmy(date),
+                date_adj = lubridate::yday(date_adj),
                 date_adj = dplyr::case_when(date_adj > 60 ~ date_adj -1, TRUE ~ date_adj))  %>%
+  # The long case_when chains below build the alternative-scenario regulation
+  # calendar (the _y2 columns; _y2 means "year 2", the projection year, as
+  # opposed to the calibration-year columns read from the feather file).
+  #
+  # Three conventions make these readable:
+  #   1. They CASCADE. The first case_when in each chain ends `TRUE ~ 0` (bags)
+  #      or `TRUE ~ 254` (sizes), establishing a closed-season default; every
+  #      subsequent one ends `TRUE ~ <the same column>`, preserving what
+  #      earlier lines set. Order therefore matters - a later line can only add
+  #      to the calendar, never reopen a day an earlier line closed.
+  #   2. `* 2.54` converts the scenario's minimum lengths from inches to
+  #      centimetres, the unit the catch-at-length data uses.
+  #   3. 254 is the closed-season sentinel: 100 inches x 2.54. It matches the
+  #      100-inch default in set_regulations.do and means "no fish is legal".
   dplyr::mutate(
     fluke_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= yday(ymd(SFmaFH_seas1_op)) & date_adj <= yday(ymd(SFmaFH_seas1_cl)) ~ as.numeric(SFmaFH_1_bag), TRUE ~ 0),
     fluke_bag_y2=dplyr::case_when(mode == "fh" & date_adj >= yday(ymd(SFmaFH_seas2_op)) & date_adj <= yday(ymd(SFmaFH_seas2_cl)) ~ as.numeric(SFmaFH_2_bag), TRUE ~ fluke_bag_y2),
@@ -68,6 +149,12 @@ directed_trips<-feather::read_feather(file.path(data_path, paste0("directed_trip
     fluke_min_y2=dplyr::case_when(mode == "sh" & date_adj >= yday(ymd(SFmaSH_seas1_op)) & date_adj <= yday(ymd(SFmaSH_seas1_cl)) ~ as.numeric(SFmaSH_1_len) * 2.54, TRUE ~ fluke_min_y2),
     fluke_min_y2=dplyr::case_when(mode == "sh" & date_adj >= yday(ymd(SFmaSH_seas2_op)) & date_adj <= yday(ymd(SFmaSH_seas2_cl)) ~ as.numeric(SFmaSH_2_len) * 2.54, TRUE ~ fluke_min_y2))
 
+    # Black sea bass regulations may be set either statewide or separately by
+    # mode, depending on what the scenario author entered in the app. The
+    # exists() test distinguishes the two: a statewide entry produces
+    # BSBma_seas1_op, while mode-specific entries produce BSBmaFH_seas1_op and
+    # siblings. Because the scenario objects are created dynamically in
+    # Section A, exists() is the only way to tell which form was supplied.
     if (exists("BSBma_seas1_op")) {
       directed_trips<- directed_trips %>%   dplyr::mutate(
       bsb_bag_y2=dplyr::case_when( date_adj >= yday(ymd(BSBma_seas1_op)) & date_adj <= yday(ymd(BSBma_seas1_cl)) ~ as.numeric(BSBma_1_bag), TRUE ~ 0),
@@ -111,10 +198,35 @@ directed_trips<-feather::read_feather(file.path(data_path, paste0("directed_trip
 
 #   readr::write_csv(directed_trips, file = here::here(paste0("output/MA_directed_trips_", Run_Name, ".csv")))
 
+################################################################################
+################################################################################
+# Section B: Run the projection, one worker per draw
+################################################################################
+################################################################################
+
+message("model_run_MA.R: starting Massachusetts projection for scenario '", Run_Name, "', 100 draws across 34 parallel workers. Expect a long run.")
+
     predictions_out10 <- data.frame()
     #future::plan(future::multisession, workers = 36)
+# 915 is a fixed seed unrelated to the pipeline's $seed; it makes a given
+# scenario reproducible. Note that furrr_options(seed = TRUE) below generates
+# per-worker streams from it, which is what keeps parallel draws independent.
 set.seed(915)
+# 34 workers is hardcoded and sized for the deployment server. On a machine
+# with fewer cores this oversubscribes badly; each worker also loads its own
+# copy of the state's data, so memory scales with this number.
 future::plan(future::multisession, workers = 34)
+#' @title Run one projection draw for Massachusetts
+#' @description Worker function mapped over draw numbers. For a single draw it
+#'   assembles that draw's inputs - the regulation calendar, projected catch
+#'   draws, calibration-year trip outcomes, choice occasions, calendar
+#'   adjustments and the calibration reallocation proportions - reshapes the
+#'   calibration statistics to long form by species, and calls
+#'   predict_rec_catch() to produce the projected outcomes.
+#' @param x Draw number. Selects the matching per-draw input files and filters
+#'   every multi-draw table to that draw.
+#' @return A data frame of projected outcomes for this draw, tagged with the
+#'   draw number and the scenario name.
 get_predictions_out<- function(x){
     #for(x in 1:25){
       
@@ -237,6 +349,12 @@ get_predictions_out<- function(x){
       
       
       ## Run the predict catch function
+      # BROKEN AS COMMITTED - neither file exists at these paths.
+      # predict_rec_catch_functions.R exists only in Code/archive/;
+      # predict_rec_catch.R does not exist anywhere (Code/sim/ has
+      # predict_rec_catch_final.R instead). Every model_run_*.R carries the
+      # same two lines, so no state can complete a run. Left unfixed per this
+      # session's scope; see Run_Model.R's header.
       source(here::here("Code/sim/predict_rec_catch_functions.R"))
       source(here::here("Code/sim/predict_rec_catch.R"))
       
@@ -269,6 +387,10 @@ get_predictions_out<- function(x){
     
     # use furrr package to parallelize the get_predictions_out function 100 times
     # This will spit out a dataframe with 100 predictions 
+    # setDTthreads(1) inside each worker is essential: without it every
+    # data.table operation would itself try to use all cores, and 34 workers
+    # each spawning that many threads would thrash the machine.
+    # The draw count is hardcoded to 100 and does not read n_simulations.
     predictions_out10<- furrr::future_map_dfr(
       1:100,
       ~{

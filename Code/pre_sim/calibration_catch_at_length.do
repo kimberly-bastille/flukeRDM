@@ -1,3 +1,53 @@
+/*******************************************************************************
+ Script:       calibration_catch_at_length.do
+ Purpose:      Builds the calibration-year catch-at-length distribution for
+               each species - the length composition of the fish anglers
+               encounter, which is what makes a minimum size limit bite. Built
+               separately for released and harvested fish, because the two
+               have very different length distributions, and then combined.
+
+               Released-at-length is assembled from several partial sources
+               because no single survey measures released fish well: the CT,
+               NJ and RI volunteer angler surveys, American Littoral Society
+               tag-and-recapture records, and MRIP's own B2 (released alive)
+               length records. Harvested-at-length comes from MRIP measured
+               harvest. Each proportion-at-length is then scaled by the total
+               discards and total harvest that
+               compare_calibration_data_to_MRIP.do produced, giving NUMBERS at
+               length rather than proportions, and the two are summed to
+               catch-at-length. Finally a gamma distribution is fitted to
+               smooth the result.
+ Inputs:       2024 CT VAS SFL SCUP BSB.xlsx and the other volunteer-survey
+               and tag workbooks, the MRIP size and B2 files named by
+               $sizelist and $b2list, and simulated_catch_totals.dta.
+ Outputs:      baseline_catch_at_length.csv,
+               baseline_catch_at_length_region.dta,
+               baseline_catch_at_length_state.csv,
+               baseline_observed_catch_at_length.csv
+ Dependencies: Globals $misc_data_cd, $sizelist, $b2list, $ndraws. Requires
+               compare_calibration_data_to_MRIP.do to have produced the
+               harvest and discard totals. Uses the user-written commands
+               renvarlab, dsconcat and gammafit.
+ Pipeline:     Step 7 of model_wrapper.do, gated by the toggle
+               generate_baseline. Its output is read by the R calibration as
+               the length distribution to draw simulated fish from, and by
+               projected_catch_at_length.do as the baseline that the
+               assessment-driven projection is applied to.
+
+ Why a gamma fit rather than the raw empirical distribution: the pooled length
+ samples are thin for some species x region cells, so the empirical
+ proportions are ragged and contain zero-count lengths that would make certain
+ fish impossible to draw. Fitting a smooth parametric distribution fills those
+ gaps and keeps the simulation from inheriting sampling noise as if it were
+ real structure.
+
+ Note: the bare `cd' near the top takes no argument. In Stata that only
+ DISPLAYS the working directory rather than changing it, so it is inert - but
+ it reads as an unfinished line.
+*******************************************************************************/
+
+display "calibration_catch_at_length.do: assembling baseline catch-at-length from volunteer survey, tag and MRIP length data, then fitting gamma distributions. This may take several minutes."
+
 
 
 ************************************************************************************************************************************************

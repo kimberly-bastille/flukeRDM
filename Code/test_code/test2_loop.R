@@ -1,4 +1,35 @@
 
+################################################################################
+################################################################################
+# Script:       test2_loop.R
+# Purpose:      Timed driver for the "_test2" branch of the projection code -
+#               the variant that switched the input format from feather to
+#               fst. Runs MA for 10 draws inside system.time(), then prints
+#               mean welfare change, trip counts and kept/caught totals so the
+#               numbers can be eyeballed against the pre-switch version. The
+#               timing wrapper is the point: this exists to check that the fst
+#               switch did not change results while confirming it is faster.
+# Inputs:       Whatever predict_rec_catch_data_read_test2.R loads for the
+#               given state and draw.
+# Outputs:      None - the write_csv call is commented out. Results stay in
+#               the object prediction_draws for interactive inspection.
+# Dependencies: Absolute source() paths into one developer's Desktop
+#               checkout; will not run elsewhere without editing. The loop
+#               variables `st` and `dr` are read by the sourced scripts rather
+#               than passed as arguments.
+# Pipeline:     Development/QA scratch. Not called by any wrapper. Companion
+#               to predict_rec_catch_data_read_test2.R and
+#               predict_rec_catch_test2.R.
+#
+# Note: the nine-state loop on the line below the active one is commented out;
+# as committed this runs MA only.
+#
+# Dev paths: 6 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 57, 58, 83, 84 and 85; plus 1 more in a
+#   commented-out line (92).
+################################################################################
+################################################################################
+
 options(scipen = 999)
 
 packages <- c("tidyr",  "magrittr", "tidyverse", "reshape2", "splitstackshape","doBy","WriteXLS","Rcpp",
@@ -30,8 +61,20 @@ conflicts_prefer(dplyr::count)
 iterative_input_data_cd="E:/Lou_projects/flukeRDM/flukeRDM_iterative_data"
 input_data_cd="C:/Users/andrew.carr-harris/Desktop/MRIP_data_2025"
 
+################################################################################
+################################################################################
+# Section A: Timed run of the fst-based (_test2) chain
+################################################################################
+################################################################################
+
+# These two assignments are overwritten by the loops below on the first
+# iteration. They exist so the sourced scripts can be run line-by-line
+# interactively without setting up the loop first.
 st<-"MA"
 dr<-1
+
+message("test2_loop.R: running the _test2 (fst) projection chain for MA, 10 draws. Elapsed time is reported at the end.")
+
 system.time({
   
 state_list<-list()
@@ -55,6 +98,18 @@ state_list<-list()
 }
 
 })
+################################################################################
+################################################################################
+# Section B: Eyeball checks against the pre-fst results
+################################################################################
+################################################################################
+
+# change_CS is the change in consumer surplus (angler welfare) relative to the
+# status-quo regulations - the model's headline economic output. The remaining
+# checks cover trip counts and kept/caught totals under baseline vs alternative
+# regulations. These are bracket-subset calls on a data.table, not a data.frame.
+# Note the tot_keep_bsb_new line is repeated verbatim; tot_keep_scup_* and
+# tot_keep_sf_* are not checked here.
 mean(prediction_draws[metric=="change_CS" & mode=="all modes"]$value)
 mean(prediction_draws[metric=="n_trips_alt" & mode=="all modes"]$value)
 mean(prediction_draws[metric=="n_trips_base" & mode=="all modes"]$value)

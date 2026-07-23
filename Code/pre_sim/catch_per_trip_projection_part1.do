@@ -1,3 +1,39 @@
+/*******************************************************************************
+ Script:       catch_per_trip_projection_part1.do
+ Purpose:      Projection-year analog of catch_per_trip_calibration_part1.do.
+               Estimates mean harvest-, discard- and catch-per-trip with
+               standard errors by state x wave x mode, imputing standard
+               errors for strata that contain only a single MRIP primary
+               sampling unit, and writes the per-stratum file the projection
+               copula step draws from.
+
+               The one substantive difference from the calibration version is
+               the sample window. The calibration uses a single fishing year;
+               this uses the most recent TWELVE WAVES of MRIP data, spanning
+               parts of three calendar years ($projection_catch_per_trip_years
+               in model_wrapper.do). The projection is made before the current
+               year is complete, so the most recent full year is not yet
+               available - a rolling window keeps the estimate as current as
+               the data allow. That global must be revised after each MRIP
+               data release.
+ Inputs:       The MRIP trip and catch files named by $triplist and $catchlist.
+ Outputs:      projected_mrip_catch_processed.xlsx (the per-stratum mean and
+               standard-error file consumed by
+               copula_modeling_projection.R).
+ Dependencies: Globals $triplist, $catchlist, $misc_data_cd and
+               $projection_catch_per_trip_years. Requires MRIP_lists.do to
+               have run. Uses the user-written command dsconcat.
+ Pipeline:     Step 9a of model_wrapper.do, inside the catch_per_trip_project
+               meta-toggle that runs this, the R copula step, part2 and the
+               MRIP comparison as one unit.
+
+ Note: the Part B comment below says "calibration year" in both this file and
+ the calibration version - it was copied across and not updated. In this file
+ Part B computes PROJECTION-period totals.
+*******************************************************************************/
+
+display "catch_per_trip_projection_part1.do: estimating projection-period mean catch-per-trip and standard errors from the most recent 12 waves of MRIP data."
+
 
 
 /*This code uses the MRIP data to: 

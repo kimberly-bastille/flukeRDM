@@ -1,8 +1,52 @@
 
 
 
+/*******************************************************************************
+ Script:       set_regulations.do
+ Purpose:      Writes the bag limit and minimum size in force on every
+               day x mode of the calibration year, for summer flounder, black
+               sea bass and scup, for one state. Each state's regulations are
+               a hand-transcribed block of season windows taken from that
+               state's published measures. This is the reference table the
+               whole model calibrates against: it determines which simulated
+               fish are legal to keep.
+ Inputs:       None - operates on the dataset already in memory.
+ Outputs:      None - adds the variables fluke_bag, fluke_min, bsb_bag,
+               bsb_min, scup_bag, scup_min, mode, month and day to the
+               in-memory dataset.
+ Dependencies: The calling dataset must already contain `state', `mode' (as
+               "pr"/"fh"/"sh") and a `day' date variable. Called
+               unconditionally from directed_trips_calibration.do; it is not
+               gated by any wrapper toggle and is not listed in
+               model_wrapper.do.
+ Pipeline:     Nested inside step 4 of model_wrapper.do. Runs once per state,
+               inside that script's state loop.
+
+ THIS FILE MUST BE UPDATED EVERY YEAR. The season dates, bag limits and size
+ limits below are literal values for a specific fishing year. The header note
+ states the coded regulations cover FY2024 and FY2025 and so did not need
+ changing for the FY2026 model - only the input MRIP data did. There is no
+ check anywhere that the regulations in this file match the year of the data
+ being processed, so a stale file produces a silently wrong calibration
+ rather than an error.
+
+ CRITICAL - one state at a time:
+ The state blocks are selected by `levelsof state' followed by comparisons of
+ the form   if "`r(levels)'" == "MA".   That is an equality test against the
+ ENTIRE list of state values present in memory, not a membership test. It
+ therefore only matches when the dataset holds exactly one state. If a caller
+ ever passes a multi-state dataset, r(levels) becomes "CT DE MA ..." , no
+ block matches, and the script silently leaves every bag at its 0 default and
+ every minimum size at its 100 default - meaning no fish is legal to keep
+ anywhere. The failure is silent, not an error.
+
+ Default sentinels: bags initialize to 0 and minimum sizes to 100 (inches).
+ Any day x mode not covered by a season window below therefore represents a
+ closed fishery, which is the intended reading of "no regulation listed".
+*******************************************************************************/
+
 ***********Set regulations for the calibration period and status-quo regulations for projection period***********
-* These need to be changed every year 
+* These need to be changed every year
 
 
 * Generate regulations for the calibration period
@@ -34,8 +78,20 @@ gen day = day((date))
 * Exclude days where there was no directed trips 
 * drop if dtrip==0
 
+/* The season windows below are written as month/day inequalities rather than
+   date comparisons. The recurring idiom
+       inrange(month,5,9) & (month > 5 | day >= 24) & (month < 9 | day <= 23)
+   means "May 24 through September 23": inside months 5-9, but excluding the
+   part of May before the 24th and the part of September after the 23rd.
+   Reading these correctly matters when updating the file - the two trailing
+   conditions are open-ended within their end months, not standalone tests.
+
+   Note also that r(levels) set here is relied upon by every state block for
+   the rest of the file. It survives because `replace' is not an r-class
+   command and so does not clear r(); inserting any r-class command between
+   the blocks would break every comparison after it. */
 * Create season indicator variables for each state and species
-levelsof state, clean 
+levelsof state, clean
 ****************
 ***** MASSACHUSETTS (MA)
 ****************

@@ -1,3 +1,45 @@
+/*******************************************************************************
+ Script:       estimate_angler_preferences.do
+ Purpose:      Produces the angler utility parameters the trip simulation uses
+               to decide whether a simulated angler takes a trip and how much
+               welfare that trip generates. Works in two stages: draw a
+               coefficient vector from the estimated mixed-logit model to
+               represent SAMPLING uncertainty (we do not know the true mean
+               preferences), then draw 10,000 individual anglers around that
+               vector to represent PREFERENCE HETEROGENEITY (anglers differ
+               from one another). Repeats for each of $ndraws simulation
+               draws and stacks the results.
+ Inputs:       m0_SFSBSB.ster (a saved Stata estimation result). As committed
+               the script does NOT read the survey data - see the note below.
+ Outputs:      preference_params.dta
+ Dependencies: Globals $misc_data_cd and $ndraws (set in model_wrapper.do).
+               Requires the user-written command dsconcat. Re-running the
+               estimation block additionally requires the cmxtmixlogit
+               command (Stata 17+ choice-model suite) and access to the
+               2022 fluke survey data on the Z: drive.
+ Pipeline:     Step 6 of model_wrapper.do, gated by the
+               `draw_angler_preferences' toggle (default ON). Its output is
+               consumed by the R calibration and projection stages, which
+               read preference_params.dta to assign each simulated angler a
+               utility function.
+
+ IMPORTANT - the estimation is disabled, not absent:
+               Everything from the opening comment marker below through the
+               "estimates save" line - the survey data assembly, variable
+               construction, protest-response screening and the mixed-logit
+               estimation itself - is inside one large block comment and does
+               NOT run. The script begins executing at "estimates use", which
+               loads coefficients estimated at some earlier date and saved to
+               m0_SFSBSB.ster.
+               This is deliberate: the choice experiment was fielded once in
+               2022, so the model is estimated once and the fitted object is
+               reused every cycle. The consequence to be aware of is that
+               $misc_data_cd/m0_SFSBSB.ster is an undocumented binary
+               prerequisite - if it is missing, this script fails immediately
+               and nothing regenerates it without un-commenting the block and
+               restoring access to the Z: drive survey data.
+*******************************************************************************/
+
 /*
 
 clear
@@ -125,10 +167,39 @@ eststo m0_SFSBSB: cmxtmixlogit chosen cost age avidity if a1_none==0 & protest!=
 estimates save "$misc_data_cd\m0_SFSBSB.ster", replace 					
 */
 
+/**************************************************/
+/**************************************************/
+/* Section A: Load the saved choice model         */
+/**************************************************/
+/**************************************************/
+
+display "estimate_angler_preferences.do: loading saved mixed-logit estimates and drawing angler preference parameters for $ndraws simulation draws (10,000 simulated anglers each). This may take several minutes."
+
+/* The coefficient names are displayed rather than used. This is a manual
+   check: the beta_draw row indices hardcoded in Section B below are positional,
+   so if the model is ever re-estimated with a different specification the
+   printed name order is what tells you the indices need updating. */
 estimates use "$misc_data_cd\m0_SFSBSB.ster"
 local cnames : colnames e(b)
 display "`cnames'"
 
+
+/**************************************************/
+/**************************************************/
+/* Section B: Two-level parameter draws           */
+/**************************************************/
+/**************************************************/
+
+/* Level 1 - sampling uncertainty. Draw one coefficient vector per simulation
+   draw from the asymptotic distribution of the estimator:
+       beta_draw = b + chol(V) * z,   z ~ N(0, I)
+   Multiplying standard normals by the Cholesky factor of the covariance
+   matrix reproduces the estimated correlation structure among coefficients,
+   so the draws respect the fact that (for example) the cost and opt-out
+   coefficients were estimated jointly.
+
+   Level 2 - preference heterogeneity - happens inside the same loop, at the
+   "set obs 10000" block below. */
 
 global params
 qui forv x=1/$ndraws{
@@ -152,6 +223,30 @@ mat iid_err=J(`K',1,0)
 		* generate 10,000 draws based on the drawn mean and SD above for the betas specified as random (preference heterogeneity)
 		* enter zeroes for the parameters above the 10% level of significance
 		
+		/* Level 2 - preference heterogeneity. 10,000 simulated anglers are
+		   drawn per simulation draw. This is a fixed population size, not a
+		   sample size from the survey; downstream code samples from these
+		   10,000 to populate simulated trips.
+
+		   Reading the beta_draw indices: rows 1-10 are the coefficient means
+		   and rows 11-17 are the estimated standard deviations of the random
+		   coefficients, in the order cmxtmixlogit reported them. So
+		   beta_draw[4,1] is the mean of the sqrt(SF kept) coefficient and
+		   beta_draw[11,1] is its SD. The three non-random parameters (cost,
+		   opt-out age, opt-out avidity) are assigned as constants because they
+		   were estimated as fixed, not random, coefficients.
+
+		   Two draws pass a literal 0 as the SD - bsb_keep and scup_catch -
+		   which makes them constant across the 10,000 anglers. Per the note in
+		   the disabled estimation block, this is intentional: SDs that were not
+		   significant at the 10% level are zeroed out rather than simulated,
+		   so no heterogeneity is imposed where the data did not support it.
+		   This is also why rows 13 and 16 of beta_draw are never referenced -
+		   they are the SDs belonging to those two zeroed parameters.
+
+		   abs() is applied to every SD because a standard deviation estimated
+		   as negative is a sign convention artifact of the mixed-logit
+		   parameterization, not a meaningful negative spread. */
 		clear 
 		set obs 10000
 		
@@ -176,7 +271,18 @@ mat iid_err=J(`K',1,0)
 
 }	
 
+/**************************************************/
+/**************************************************/
+/* Section C: Stack all draws and save            */
+/**************************************************/
+/**************************************************/
+
+/* $params accumulated one tempfile path per simulation draw using the same
+   quoted-list idiom as MRIP_lists.do. dsconcat (user-written) appends them all
+   into one dataset, giving $ndraws x 10,000 rows keyed by the draw variable. */
 clear
 dsconcat $params
 
 save  "$misc_data_cd\preference_params.dta", replace
+
+display "estimate_angler_preferences.do: finished. Wrote preference_params.dta."

@@ -1,3 +1,39 @@
+################################################################################
+################################################################################
+# Script:       project_rec_catch_final_revised_v3.R
+# Purpose:      Candidate replacement for the production projection code,
+#               Code/sim/predict_rec_catch_final.R. Same modeling job - run
+#               the projection year under new regulations, carrying the
+#               calibration's reallocation proportions forward - but
+#               restructured so that the work is done by two composable
+#               functions, read_projection_common_inputs() and
+#               compute_projection(), rather than by top-level script code.
+#               That separation is what lets the batch helpers read shared
+#               inputs once and reuse them across many state x draw jobs.
+# Inputs:       projected_catch_at_length.csv, calibrated_model_stats.fst,
+#               L_W_Conversion.csv, the per-draw projection catch files, and
+#               the calibration base outcomes and choice occasions.
+# Outputs:      Returned to the caller; run_one_projection_job() persists them.
+# Dependencies: Packages data.table, fst, readr. Must be sourced BEFORE
+#               project_rec_catch_batch_helpers_revised.R, which calls the two
+#               functions named above.
+# Pipeline:     Development/QA scratch - the candidate replacement for the
+#               Code/sim projection path. Driven by run_projection_final.R.
+#               Not called by any wrapper.
+# Dev paths:    1 hardcoded absolute path to a developer's local machine
+#               (C:\), at line 282 (the L_W_Conversion.csv default argument).
+#
+# Beyond the refactor, this version adds stable_logsum2() and
+# fill_na_numeric() to the helper set, and pushes the input reading into
+# read_fst_any(), which tolerates the repo's several file-naming conventions.
+# The remaining helpers are the same duplicated set found in the Code/sim
+# calibration and projection scripts.
+#
+# Paired with project_rec_catch_final_revised_v3check.R, a validation variant
+# that differs from this file in roughly 290 lines.
+################################################################################
+################################################################################
+
 
 # project_rec_catch_final.R
 # Efficient projection-year simulation for summer flounder, black sea bass, and scup.

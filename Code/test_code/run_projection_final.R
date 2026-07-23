@@ -1,4 +1,36 @@
 
+################################################################################
+################################################################################
+# Script:       run_projection_final.R
+# Purpose:      Driver for the refactored ("revised_v3") projection code in
+#               Code/test_code. Reads the inputs that are common to every
+#               state and draw ONCE via read_projection_common_inputs(), then
+#               runs the projection batch over the requested states and draws.
+#               Hoisting the shared reads out of the loop is the whole point
+#               of the refactor - the production path in Code/sim re-reads
+#               them per iteration. Currently configured for a single
+#               state x draw (MA, draw 1) as a timing test.
+# Inputs:       Read by read_projection_common_inputs() from input_data_cd
+#               and iterative_input_data_cd; not named individually here.
+# Outputs:      Written by run_projection_batch_purrr() under the run tag
+#               "candidate_reg_set_1"; nothing is written directly here.
+# Dependencies: Sources project_rec_catch_final_revised_v3.R and
+#               project_rec_catch_batch_helpers_revised.R by absolute path
+#               into one developer's Desktop checkout. Packages data.table,
+#               fst, purrr, furrr, future, readr, here, plyr, dplyr.
+# Pipeline:     Development/QA scratch - the candidate replacement for the
+#               Code/sim projection path. Not called by any wrapper.
+#
+# Note on n_simulations: set to 125 here, matching the 125 draws generated so
+# that "check calibration convergence.do" can select 100 that converged. This
+# does not match the 10 used in "Code/sim/R code wrapper.R" or the 100/3 that
+# Stata's $ndraws takes; the three are not programmatically linked.
+#
+# Dev paths: 4 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 78, 79, 86 and 87.
+################################################################################
+################################################################################
+
 options(scipen = 999)
 
 # packages <- c("tidyr",  "magrittr", "tidyverse", "reshape2", "splitstackshape","doBy","WriteXLS","Rcpp",
@@ -57,10 +89,19 @@ n_draws<-50 #Number of simulated trips per day
 source("C:/Users/andrew.carr-harris/Desktop/Git/flukeRDM/Code/test_code/project_rec_catch_final_revised_v3.R")
 source("C:/Users/andrew.carr-harris/Desktop/Git/flukeRDM/Code/test_code/project_rec_catch_batch_helpers_revised.R")
 
+################################################################################
+################################################################################
+# Section A: Read shared inputs once, then run the projection batch
+################################################################################
+################################################################################
+
 states <- c("MA")
 draws <- 1:1
+
+message("run_projection_final.R: reading common projection inputs, then running the projection batch for ", length(states), " state(s) x ", length(draws), " draw(s). Elapsed time is reported at the end.")
+
 system.time({
-  
+
 common_inputs <- read_projection_common_inputs(
   iterative_input_data_cd = iterative_input_data_cd,
   input_data_cd = input_data_cd,

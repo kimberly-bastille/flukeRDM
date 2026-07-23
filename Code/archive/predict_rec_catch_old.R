@@ -1,3 +1,24 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      predict_rec_catch_old.R
+# Purpose:     The projection main loop - predicts recreational catch for summer
+#              flounder, black sea bass and scup. Named '_old' by the developers,
+#              and the nearest thing in the repo to the missing
+#              Code/sim/predict_rec_catch.R that the per-state scripts try to
+#              source.
+# Superseded by: Code/sim/predict_rec_catch_final.R
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+################################################################################
+################################################################################
+
 # Predict Rec Catch
 # This function predict recreational catch for summer flounder, black sea bass, and scup. 
 

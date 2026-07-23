@@ -1,3 +1,40 @@
+################################################################################
+################################################################################
+# Script:       extra_draws_data_compiling.R
+# Purpose:      Builds projection input files for the SUPPLEMENTAL draws in
+#               RI, MD and VA. Those three states did not reach 100 converged
+#               calibration draws on the first pass, so extra draws (101-105)
+#               were selected; this script pulls those draws out of the full
+#               calibration inputs and renumbers them into the 1-100 keying
+#               scheme the projection code expects, writing a parallel set of
+#               "_extra" files.
+# Inputs:       calibration_good_draws_extras.xlsx,
+#               directed_trips_calibration_<ST>.feather,
+#               projected catch-at-length and catch draw files for RI, MD, VA
+# Outputs:      directed_trips_calibration_new_extra_<ST>.feather and the
+#               matching extra-draw files under additional_draws/
+# Dependencies: Objects code_cd, input_data_cd and iterative_input_data_cd are
+#               set at the top as absolute developer paths. Requires
+#               "check calibration convergence.do" to have run first - it is
+#               what produces calibration_good_draws_extras.xlsx.
+# Pipeline:     Development/QA scratch, between the calibration and projection
+#               stages. Not called by any wrapper.
+#
+# The draw / draw2 renumbering is the reason this script exists. Calibration
+# draw numbers are sparse after non-converged draws are discarded, but the
+# projection code loops over a dense 1..N range. The good-draws spreadsheet
+# carries both the original draw id and its new dense position, and every
+# join below is there to swap one for the other.
+#
+# The two bare `st<-` assignments near the top are leftovers for interactive
+# stepping; the loops immediately overwrite them.
+#
+# Dev paths: 19 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 36, 37, 53, 59, 86, 97, 104, 121, 124, 127, 130,
+#   139, 145, 154, 155, 174, 175, 189 and 190.
+################################################################################
+################################################################################
+
 
 code_cd=here("Code", "sim")
 input_data_cd="C:/Users/andrew.carr-harris/Desktop/MRIP_data_2025"

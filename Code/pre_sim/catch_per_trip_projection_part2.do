@@ -1,6 +1,36 @@
 
 
 
+/*******************************************************************************
+ Script:       catch_per_trip_projection_part2.do
+ Purpose:      Builds the projection-year catch draw files the R projection
+               stage consumes. Takes the calendar of days that had directed
+               trips, expands each day x mode into 50 simulated trips with 30
+               catch-per-trip draws each, and attaches a catch outcome to
+               every one of those rows by sampling from the copula-generated
+               pool of outcomes for the matching mode x wave stratum. The
+               result is one file per state x draw giving simulated catch for
+               every trip on every fishing day.
+ Inputs:       directed_trips_calibration_<ST>.csv,
+               proj_catch_draws_raw_<ST>_<i>.dta
+ Outputs:      proj_catch_draws_<ST>_<i>.dta
+ Dependencies: Globals $misc_data_cd, $proj_catch_data_cd and $ndraws.
+               Requires copula_modeling_projection.R to have produced the
+               raw projection draws, and catch_per_trip_projection_part1.do
+               to have produced the directed-trips calendar.
+ Pipeline:     Step 13c of model_wrapper.do, inside the `catch_per_trip_project'
+               meta-toggle that runs part1, the R copula step, this script and
+               compare_projection_data_to_MRIP.do as one unit. The calibration
+               analog of this script is calibration_catch_per_trip_part2.do.
+
+ Sizing note: the 50 trips x 30 catch draws per day x mode is the source of
+               this stage's runtime and disk footprint - a state with ~200
+               fishing days across three modes produces on the order of a
+               million rows per draw, and that is repeated $ndraws times.
+*******************************************************************************/
+
+display "catch_per_trip_projection_part2.do: building projection catch draws for 9 states x $ndraws draws. This is one of the longest steps in the Stata pipeline and may run for hours."
+
 * This script create projection catch draw files for each state that contains:
 	* 50 trips in each day of the calibration year in which there were directed trips, each with 30 draws of catch-per-trip
 	* Demographics: age and avidity (number trips past 12 months) come from the base_outcomes files generated in the calibration simulation 
@@ -21,6 +51,10 @@ foreach s of local regions {
 	drop month month1
     gen byte   month    = month(date_num)
     gen str2   month1   = string(month, "%02.0f")
+    /* MRIP waves are two-month sampling periods: wave 1 = Jan-Feb, wave 2 =
+       Mar-Apr, and so on through wave 6 = Nov-Dec. Regulations, effort and
+       catch are all reported and modeled at this resolution, which is why the
+       month is immediately collapsed to a wave here. */
     gen byte   wave     = cond(inlist(month,1,2),1, ///
                         cond(inlist(month,3,4),2, ///
                         cond(inlist(month,5,6),3, ///
@@ -41,6 +75,11 @@ foreach s of local regions {
         use `base', clear
         keep if draw==`i'
 
+        /* Two nested expansions build the simulated trip population: each
+           mode x date becomes 50 trips, and each of those trips becomes 30
+           catch draws. The 50 represents variation across anglers fishing the
+           same day; the 30 represents uncertainty in what any one of them
+           catches. Both are fixed design constants, not estimated. */
         * Expand to 50 trips x 30 catch draws within each (mode,date)
         egen long dom = group(mode date)  
         expand 50
@@ -141,11 +180,23 @@ foreach s of local regions {
             use `excelpool', clear
             keep if wave=="`wv'" & mode=="`md'"
 
+			/* The copula pool for this mode x wave usually holds far fewer
+			   rows than the number of simulated trips needing an outcome, so
+			   it is first replicated ceil(needed/have) times and then sampled
+			   down to exactly the required count. This is sampling WITH
+			   replacement, implemented via expand rather than bsample -
+			   each pool outcome can be reused across many simulated trips. */
 			quietly count
 			local mult = ceil(`n_needed'/r(N))
 			expand `mult'
 			sample `n_needed', count
-			
+
+            /* This guard can no longer fire: the expand/sample above already
+               guarantees exactly `n_needed' rows. It is a leftover from before
+               the replication step was added. Note also that its message
+               interpolates `st', which is never defined here - the state loop
+               variable is `s' - so the state would print as empty if it ever
+               did fire. Flagged, not fixed. */
             * ensure enough rows before sampling
             quietly count
             if (r(N) < `n_needed') {
@@ -204,4 +255,6 @@ foreach s of local regions {
 		
 }		
 }
+
+display "catch_per_trip_projection_part2.do: finished writing proj_catch_draws files."
 

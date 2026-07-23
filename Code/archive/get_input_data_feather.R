@@ -1,3 +1,23 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      get_input_data_feather.R
+# Purpose:     Utility for fetching feather files from a Google Drive URL, covering
+#              five groups of input files. Self-described in its own header as
+#              utility code that is not used to run the model.
+# Superseded by: no direct successor
+#              Google Drive access now goes through Code/helpers/googledrivesetup.R and get_assessment_from_gdrive.do
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+################################################################################
+################################################################################
+
 # Code to get feather files from a google drive url.
 # This is a piece of utility code, it is not used to run the actual RDM
 # 

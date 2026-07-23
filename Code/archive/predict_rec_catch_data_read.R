@@ -1,3 +1,26 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      predict_rec_catch_data_read.R
+# Purpose:     Loads the inputs for one state x draw of a non-Shiny projection run,
+#              leaving them in the environment for the predict/functions scripts.
+#              Ancestor of the Code/test_code/predict_rec_catch_data_read_test*
+#              family.
+# Superseded by: the read_projection_common_inputs() function in Code/sim/predict_rec_catch_final.R
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+#
+# Dev paths: 3 hardcoded absolute paths to a developer's local machine
+#   (C:\ or E:\), at lines 25, 26 and 66.
+################################################################################
+################################################################################
+
 # Data read for non-shiny run of predict_rec_catch.R
 ## Run this script prior to predict rec catch
 

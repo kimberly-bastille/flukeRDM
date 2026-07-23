@@ -1,3 +1,20 @@
+/******************************************************************************
+ ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+ 
+ Script:      compare catch-at-length btw calib and proj.do
+ Purpose:     Short diagnostic comparing calibration-year and projection-year
+              catch-at-length, binned into 5 cm groups, to check that the
+              projection has not distorted the length composition implausibly.
+ Superseded by: no direct successor
+ 
+ This file is retained for reference and is not called by any wrapper,
+ script or app in this repository. It is NOT maintained: paths, data
+ formats and modeling choices in it may be years out of date, and it
+ should not be used to understand how the pipeline currently behaves.
+ Per the documentation session's scope, archived files received a header
+ only - no inline documentation, and no code was changed.
+******************************************************************************/
+
 
 import delimited using "$iterative_input_data_cd/baseline_catch_at_length.csv", clear   
 gen length_bin = floor(length/5)*5   // groups of 5

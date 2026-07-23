@@ -1,3 +1,22 @@
+################################################################################
+################################################################################
+# ARCHIVED - NOT PRODUCTION CODE. See Code/archive/README.md.
+# 
+# Script:      calibrate_rec_catch0.R
+# Purpose:     Calibration PASS 0 - the strict-compliance trip simulation whose
+#              gap against MRIP the next pass closes. Direct predecessor of the
+#              current optimized version.
+# Superseded by: Code/sim/calibrate_rec_catch0_optimized.R
+# 
+# This file is retained for reference and is not called by any wrapper,
+# script or app in this repository. It is NOT maintained: paths, data
+# formats and modeling choices in it may be years out of date, and it
+# should not be used to understand how the pipeline currently behaves.
+# Per the documentation session's scope, archived files received a header
+# only - no inline documentation, and no code was changed.
+################################################################################
+################################################################################
+
 
 
 #This is the calibration-year trip simulation WITHOUT any adjustments for illegal harvest or voluntary release
