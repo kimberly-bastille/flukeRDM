@@ -17,7 +17,11 @@
                directory must already be the project root so that `here'
                resolves correctly (the header comment below describes the
                profile.do trick for this). Requires the user-written commands
-               xsvmat, gammafit, grc1leg, rscript and here.
+               xsvmat, gammafit, grc1leg, rscript and here.  Some R scripts that a
+               are called will copy files from Google Drive or write files to 
+			   Google Drive.  If you have not already connected to google drive, 
+			   run "Code/helpers/googledrivesetup.R".  If you do not the
+			   the R scripts that use googledrive will fail ungracefully.
  Pipeline:     Entry point 1 of 3, invoked as
                    do Code/pre_sim/model_wrapper.do
                Runs 17 scripts across steps 0-9. It does NOT chain to the R
@@ -246,9 +250,7 @@ loc catch_per_trip_project=1       // Generate projection-year catch-per trip
 /* Prototype mode. ON as committed - see the header. This silently overrides
    the $ndraws 100 set above with 3, which makes a full pass through the
    pipeline finish in a fraction of the time but produces results too noisy to
-   use. Note that nothing downstream reports which mode was used, so a
-   3-draw output file is indistinguishable from a 100-draw one by inspection.
-   Note also that the R side does not read $ndraws at all: "R code wrapper.R"
+   use. Note also that the R side does not read $ndraws at all: "R code wrapper.R"
    sets its own n_simulations (currently 10), so changing proto here does not
    keep the two halves of the pipeline in step. */
 // Prototyping
@@ -399,6 +401,11 @@ if `catch_per_trip_project'{
    Closing this gap is in scope for the next flukeRDM development pass. */
 
 display "model_wrapper.do: Stata pre-simulation stage complete. NEXT STEP IS MANUAL - run Code/sim/'R code wrapper.R' to perform the R calibration; this wrapper does not call it."
+
+
+if (`proto'==1) {
+	display "Prototyping option set on. ndraws global set to $ndraws"
+}
 
 
 
