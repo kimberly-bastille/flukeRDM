@@ -140,10 +140,11 @@ gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
 
+/* handled in get_mrip_oracle
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
@@ -726,10 +727,11 @@ gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
 
+/* handled in get_mrip_oracle
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
@@ -867,11 +869,11 @@ gen month1=substr(date, 5, 2)
 gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
-
+/* handled in get_mrip_oracle)
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
@@ -1008,10 +1010,11 @@ gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
 
+/* handled in get mrip_oracle
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
@@ -1153,11 +1156,11 @@ gen month1=substr(date, 5, 2)
 gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
-
+/* handled in get_mrip_oracle
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
