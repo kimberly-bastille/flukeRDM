@@ -211,9 +211,9 @@ global seed 03211990
 
 // Control which modules to run (set to 0 to skip)
 loc pull_assessment = 1		 		// Pull Assessment data
+loc pull_MRIP= 1			 		// Pull MRIP data
 loc processMRIP = 1		 			// deal with casing MRIP data
 loc assemblemriplists = 1		 	// deal with casing MRIP data
-
 loc estimate_dtrips = 1				// Estimate Directed Trips 
 loc costs_per_trip = 1			// Create Distributions of costs per trip (run 1x)
 loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
@@ -276,11 +276,30 @@ if `push_NAA_to_gdrive' {
 	di "NAA pushed to GDrive"
 
 	}
+// 0) Pull MRIP data from Oracle (takes a while).
+
+/* Paths to the tidied MRIP extracts (written by tidyup_mrip_data_fromR.do). */
+	global catchlist "$misc_data_cd/mrip_catch.dta"	
+	global triplist  "$misc_data_cd/mrip_trip.dta"
+	global b2list  "$misc_data_cd/mrip_size_b2.dta"
+	global sizelist  "$misc_data_cd/mrip_size.dta"
+
+	
+	if `pull_MRIP' {
+  	di "Pulling MRIP data from oracle"
+		rscript using "$input_code_cd\get_mrip_oracle.R", args($first_mrip_year $last_mrip_year)
+    di "Oracle Data Pull Finished"
+
+  	di "Tidying up MRIP data"
+  	do "$input_code_cd\tidyup_mrip_data_fromR.do"
+  	di "Tidyup finished"
+
+}
 
 	
 	
 
-// 1) Pull the MRIP data
+// 1) Process MRIP data
 
 if `processMRIP' {
 	di "Processing MRIP data"
@@ -303,6 +322,10 @@ assert "${triplist}"!=""
 		// THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
 
 if `estimate_dtrips' {
+  di "Compiling Aggregate Effort"
+		rscript using "$input_code_cd\get_mrip_trips.R"
+
+	di "Estimating Directed trips"
 
 	di "Estimating Directed trips"
     do "$input_code_cd\directed_trips_calibration.do"
