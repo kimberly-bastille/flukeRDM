@@ -122,7 +122,6 @@ set varabbrev on
 /* used by:
 tidyup_mrip_data_fromR.do*/
 
-global first_mrip_year 2023
 global last_mrip_year 2025
 numlist "$first_mrip_year/$last_mrip_year"
 
@@ -176,7 +175,6 @@ global fed_holidays_y2 "inlist(day_y2, td(01jan2026), td(19jan2026), td(16feb202
 global leap_yr_days "td(29feb2024)" 
 
 * Number of model iterations
-global ndraws 100
 
 * set years of which to pull the NEFSC trawl survey data
 global NEFSC_svy_yrs "inlist(year,2024, 2023, 2022)"
