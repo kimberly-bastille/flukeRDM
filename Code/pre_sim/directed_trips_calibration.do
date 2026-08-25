@@ -128,7 +128,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 
 tostring wave, gen(w2)
@@ -716,7 +719,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 tostring wave, gen(w2)
 tostring year, gen(year2)
@@ -858,7 +864,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 
 tostring wave, gen(w2)
@@ -999,7 +1008,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 tostring wave, gen(w2)
 tostring year, gen(year2)
@@ -1145,7 +1157,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 
 tostring wave, gen(w2)
