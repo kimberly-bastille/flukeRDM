@@ -6,9 +6,9 @@
 #               character, and writes per-element .dta files plus a combined .Rds.
 # Inputs:       Command-line args: first_year last_year. Live Oracle connection
 #               (mriptacklebox's nefscdb_con).
-# Outputs:      <gf.data.dir>/miscellaneous/mrip_{trip,catch,size,size_b2}.dta and
+# Outputs:      <sf.data.dir>/miscellaneous/mrip_{trip,catch,size,size_b2}.dta and
 #               mrip_pull<today>.Rds.
-# Dependencies: Sources developer_setup.R (for gf.data.dir). Requires Oracle
+# Dependencies: Sources developer_setup.R (for sf.data.dir). Requires Oracle
 #               access to MRIP data tables and RECDBS schema
 # Pipeline:     Step 2 of model_wrapper.do (gated by pull_MRIP), invoked via
 #               `rscript using ... args(first last)`, and followed immediately by
@@ -53,7 +53,7 @@ conflicts_prefer(dplyr::lag)
 # standard "here", username setup, and paths
 here::i_am("Code/pre_sim/get_mrip_oracle.R")
 source(here("Code", "helpers", "developer_setup.R"))
-output_folder<-file.path(gf.data.dir, "miscellaneous")
+output_folder<-file.path(sf.data.dir, "miscellaneous")
 
 #for help with versioning
 todaysdate<-Sys.Date()
@@ -74,35 +74,27 @@ mrip_pull <- mrip_microdata(
   format = c('nefsc_db'),
   nefsc_db_con=con_name
 )
+
+
 message("MRIP microdata from Oracle read in...")
 
 
+message("Constructing NC site list")
+message("This is the ASMFC version and is slightly different from the MRIP tacklebox.")
 
-message("Pulling Site List from Oracle...")
-
-new_site_list<-glue("select * from RECDBS.MRIP_COD_ALL_SITE_LIST")
-site_list<-dbGetQuery(con_name, new_site_list)
-dbDisconnect(con_name)
-
-message("Processing MA and ME Sites")
-site_list_WGOM_COD<-site_list %>%
-  filter(STATE %in% c("MA", "ME")) %>%
-  select(c(STATE, INTSITE, NMFS_STOCK_AREA, NMFS_STAT_AREA))  %>%
-  mutate(NMFS_STOCK_AREA=case_when(
-    NMFS_STAT_AREA %in% c("521", "526", "541", "514", "513", "515") ~ "WGOM",
-    TRUE ~ "XX"
+nc_county_split <-dplyr::bind_rows(
+    tibble::tibble(
+      STATE_CODE="37",#North Carolina
+      CNTY = c("015","029", "041", "053", "055", "139", "143", "177", "187"),
+      STOCK_REGION_CALC ="NORTH"
+    ),
+    tibble::tibble(
+      STATE_CODE="37", #North Carolina
+      CNTY =  c("013", "019", "031", "049", "095", "129", "133", "137", "141", "147") ,
+      STOCK_REGION_CALC = "SOUTH"
     )
-  ) %>%
-  distinct()
-
-
+  ) 
 message("Data Munging")
-
-# append a mrip_pull_date column (today's date) to every element, formatted as
-# "Month DD, YYYY" (the %B %d, %Y example renders e.g. as "July 16, 2026")
-mrip_pull <- map(mrip_pull, ~ mutate(
-  .x, MRIP_PULL_DATE =as.character(format(todaysdate,"%B %d, %Y") ) )
-)
 
 # Consolidate modes
 mrip_pull <- map(mrip_pull, ~ mutate(
@@ -114,20 +106,19 @@ mrip_pull <- map(mrip_pull, ~ mutate(
   )
 )
 
-#Bring the site list info into trip
-#Everything not in WGOM is allocated to XX, but they could be allocated to other stockareas
-#If you had the definitions.
+# Bring the site list info into trip
+# The dividing line is part of the way into NC. not north of this is allocated to South, but that includes HI, just to conserve on domains.
+
 mrip_pull$trip <- mrip_pull$trip %>%
   left_join(
-  site_list_WGOM_COD, by=join_by(INTSITE==INTSITE, ST_ABB==STATE)
+    nc_county_split, by=join_by(CNTY==CNTY, ST==STATE_CODE)
   ) %>%
-  mutate(AREA_S=case_when(
-    ST =="33" ~ "WGOM",
-    ST %in%  c("25","23") ~ NMFS_STOCK_AREA,
-    TRUE ~ "XX"
-  )) %>%
-    select(-c("NMFS_STAT_AREA","NMFS_STOCK_AREA")
-)
+  mutate(STOCK_REGION_CALC=case_when(
+    ST %in%  c("37") ~ STOCK_REGION_CALC,
+    ST %in%  c("09","10","23","24","25","33","34","36","44","51") ~ "NORTH",
+    ST %in%  c("01","12","13","15","28","45") ~ "SOUTH", # I'm binning everything that isn't North into South.
+    TRUE ~ "SOUTH"
+  )) 
 
 # append the mrip_pull_date to the mrip_pull list as a tibble
 
@@ -159,6 +150,10 @@ mrip_pull <- map(mrip_pull, ~ mutate(
   .x, across(c(strat_id, psu_id, id_code,zip), as.character))
   )
 
+  
+mrip_pull$trip <- mrip_pull$trip %>%
+	mutate(cnty=as.numeric(cnty))
+  
 # You might need to delete a few columns of of data if the downstream stata code doesn't work.
 #MODE1, AREA_S
 
