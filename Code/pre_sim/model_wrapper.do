@@ -60,9 +60,6 @@
                                 calibration_catch_per_trip_part2.do, which
                                 this toggle does not control.)
 
- 3. Running this file exactly as committed therefore produces a 3-draw test
- run, not a production run. GroundfishRDM defaults the same toggle to 0. Set
- proto = 0 for a real run.
 *******************************************************************************/
 
 /**** SFSBSB RDM code wrapper ****/
@@ -122,6 +119,7 @@ set varabbrev on
 /* used by:
 tidyup_mrip_data_fromR.do*/
 
+global first_mrip_year 2022
 global last_mrip_year 2025
 numlist "$first_mrip_year/$last_mrip_year"
 
@@ -175,6 +173,7 @@ global fed_holidays_y2 "inlist(day_y2, td(01jan2026), td(19jan2026), td(16feb202
 global leap_yr_days "td(29feb2024)" 
 
 * Number of model iterations
+global ndraws 150
 
 * set years of which to pull the NEFSC trawl survey data
 global NEFSC_svy_yrs "inlist(year,2024, 2023, 2022)"
