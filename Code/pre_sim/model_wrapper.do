@@ -60,7 +60,6 @@
                                 calibration_catch_per_trip_part2.do, which
                                 this toggle does not control.)
 
- PROTOTYPE MODE IS ON BY DEFAULT. `proto' = 1 overwrites $ndraws from 100 to
  3. Running this file exactly as committed therefore produces a 3-draw test
  run, not a production run. GroundfishRDM defaults the same toggle to 0. Set
  proto = 0 for a real run.
