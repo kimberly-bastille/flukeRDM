@@ -119,10 +119,23 @@ set varabbrev on
 
 * These need to be changed every year 
 
-* year-waves of MRIP data. 
-global yr_wvs 20221 20222 20223 20224 20225 20226 20231 20232 20233 20234 20235 20236  20241 20242 20243 20244 20245  20246 20251 20252 20253 20254 20255 20256
-global yearlist 2022 2023 2024 2025
+/* First and last year of MRIP data.*/
+/* used by:
+tidyup_mrip_data_fromR.do*/
+
+global first_mrip_year 2023
+global last_mrip_year 2025
+numlist "$first_mrip_year/$last_mrip_year"
+
+global yearlist  `r(numlist)'
 global wavelist 1 2 3 4 5 6
+
+
+* year-waves of MRIP data. 
+global yr_wvs 20221 20222 20223 20224 20225 20226  ///
+			  20231 20232 20233 20234 20235 20236  ///
+			  20241 20242 20243 20244 20245 20246  ///
+			  20251 20252 20253 20254 20255 20256
 
 global calibration_year "(year==2024 & inlist(wave, 1, 2, 3, 4, 5, 6))"
 global calibration_year_num 2024
@@ -212,8 +225,8 @@ global seed 03211990
 // Control which modules to run (set to 0 to skip)
 loc pull_assessment = 1		 		// Pull Assessment data
 loc pull_MRIP= 1			 		// Pull MRIP data
-loc processMRIP = 1		 			// deal with casing MRIP data
-loc assemblemriplists = 1		 	// deal with casing MRIP data
+loc processMRIP = 0		 			// deal with casing MRIP data
+loc assemblemriplists = 0		 	// deal with casing MRIP data
 loc estimate_dtrips = 1				// Estimate Directed Trips 
 loc costs_per_trip = 1			// Create Distributions of costs per trip (run 1x)
 loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
@@ -240,7 +253,7 @@ loc prep_NAA_for_dashboard = 1		// Pull Assessment data
 loc push_NAA_to_gdrive =1 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
 
 
-/* Prototype mode. ON as committed - see the header. This silently overrides
+/* Prototype mode will overrides
    the $ndraws 100 set above with 3, which makes a full pass through the
    pipeline finish in a fraction of the time but produces results too noisy to
    use. Note also that the R side does not read $ndraws at all: "R code wrapper.R"
