@@ -433,7 +433,7 @@ if `catch_per_trip_project'{
 }
 
 display "model_wrapper.do: Stata pre-simulation stage complete. NEXT STEP IS MANUAL - run Code/sim/'R code wrapper.R' to perform the R calibration; this wrapper does not call it."
-// 11) Run the calibration routine in R, export files to Google Drive
+// 10) Run the calibration routine in R, export files to Google Drive
 
 /* not tested 8/25/2026*/
 
