@@ -219,7 +219,7 @@ global seed 03211990
 **********************************************************************
 
 // Control which modules to run (set to 0 to skip)
-loc pull_assessment = 1		 		// Pull Assessment data
+loc pull_assessment = 0		 		// Pull Assessment data
 loc pull_MRIP= 1			 		// Pull MRIP data
 loc processMRIP = 0		 			// deal with casing MRIP data
 loc assemblemriplists = 0		 	// deal with casing MRIP data
@@ -251,11 +251,9 @@ loc run_calibration =0 				// Run calibration /sim/R wrapper.R
 
 
 /* Prototype mode will overrides
-   the $ndraws 100 set above with 3, which makes a full pass through the
-   pipeline finish in a fraction of the time but produces results too noisy to
-   use. Note also that the R side does not read $ndraws at all: "R code wrapper.R"
-   sets its own n_simulations (currently 10), so changing proto here does not
-   keep the two halves of the pipeline in step. */
+   the $ndraws =150 to ndraws=3, which makes a full pass through the
+   pipeline finish in a fraction of the time  
+   */
 // Prototyping
 local proto = 0
 
@@ -286,6 +284,7 @@ if `push_NAA_to_gdrive' {
 	di "NAA pushed to GDrive"
 
 	}
+
 // 0) Pull MRIP data from Oracle (takes a while).
 
 /* Paths to the tidied MRIP extracts (written by tidyup_mrip_data_fromR.do). */
@@ -443,8 +442,7 @@ if `run_calibration'{
 
 		rscript using "$here\Code\sim\R code wrapper.R", args($ndraws)
     	di "Simulation model calibrated and files exported to Google Drive"
-
-		}
+}
 
 
 
