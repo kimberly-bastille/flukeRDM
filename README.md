@@ -135,29 +135,25 @@ in its own top-level assignments (`input_data_cd`, `iterative_input_data_cd`, li
 wrapper will run. This differs from groundfishRDM, where comparable hard-coded paths are
 confined to standalone test scripts.
 
-### The three entry points are not chained
+### The two entry points are not chained
 
-This is the key structural difference from groundfishRDM, where the Stata wrapper's final
-step invokes the R wrapper directly. flukeRDM has **three independent entry points with no
-code-level connection between any of them**. A person must run all three, in the right
-order, by hand:
+flukeRDM has **two independent entry points with no code-level connection between any of them**. A person must run both in this order:
 
 ```
 1.  do Code/pre_sim/model_wrapper.do        # Stage 1 — Stata
-2.  Rscript "Code/sim/R code wrapper.R"     # Stage 2 — R calibration
-3.  Rscript Run_Model.R <Run_Name>          # Stage 3 — projection  [BROKEN, see below]
+2.  Rscript Run_Model.R <Run_Name>          # Stage 3 — projection  [BROKEN, see below]
 ```
 
 Every hand-off between stages is filesystem-only. Nothing verifies that Stage 1 finished
-before Stage 2 starts, or that either ran before Stage 3.
+before Stage 2 starts
 
 ### Stage 1: `Code/pre_sim/model_wrapper.do`
 
 ```
  0.                                      developer_setup_stata.do            (unconditional)
  1.  pull_assessment          = 1        get_assessment_from_gdrive.do
- 2.  processMRIP              = 1        MRIP_column_cases.do
- 3.  assemblemriplists        = 1        MRIP_lists.do
+ 2.  processMRIP              = 0        MRIP_column_cases.do
+ 3.  assemblemriplists        = 0        MRIP_lists.do
  4.  estimate_dtrips          = 1        directed_trips_calibration.do
        4a.                               └─ set_regulations.do               (nested, unconditional)
  5.  costs_per_trip           = 1        survey_trip_costs.do
@@ -173,6 +169,7 @@ before Stage 2 starts, or that either ran before Stage 3.
        13b.                              ├─ copula_modeling_projection.R
        13c.                              ├─ catch_per_trip_projection_part2.do
        13d.                              └─ compare_projection_data_to_MRIP.do
+14.  run_calibration = 1                 run the calibration
 ```
 
 **About the toggles.** Sixteen toggle-gated sections, defined as Stata *locals* in one
@@ -185,52 +182,13 @@ uniformly `0`/`1`. Note two departures from groundfishRDM's one-toggle-per-scrip
   `Code/pre_sim/` but is never called), and `angler_demogs` (1/ON, no explanatory comment
   at all — groundfishRDM has a fully wired toggle of the same name). Setting any of them
   has no effect.
-- `assemblemriplists` gates the **only** definition point for `$catchlist`, `$triplist`,
-  `$b2list` and `$sizelist`. Unlike groundfishRDM, the wrapper provides no fallback
-  default. It currently defaults ON, so the risk is latent — but turning it off leaves
-  several later steps reading undefined globals.
 
 `set_regulations.do` requires **manual editing every year** to enter status-quo
 regulations. It is reached only through `estimate_dtrips`.
 
-### The pipeline runs in prototype mode by default
+### Tipeline prototyping 
 
-`proto` defaults to **1 (ON)** — the opposite of groundfishRDM. Three observations
-compound:
-
-1. `model_wrapper.do` sets `global ndraws 100`.
-2. `local proto = 1` then overwrites it: `global ndraws 3`.
-3. Both copula scripts hard-code `n_draws <- 3` and never read `$ndraws`.
-
-Downstream Stata scripts loop `forv i=1/$ndraws` over draw files that only the copula step
-writes. **So setting `proto = 0` for a production run makes the pipeline look for 100 draw
-files where only 3 exist, and fail at draw 4.** A full-size run requires editing `n_draws`
-in *both* copula scripts as well as clearing `proto`. Nothing in the code or comments says
-so.
-
-Iteration counts disagree in six places and none are programmatically linked:
-
-| Setting | Location | Value |
-|---|---|---|
-| `$ndraws` | `model_wrapper.do` | 100, overwritten to 3 by `proto` |
-| `n_draws` | both copula scripts | 3 (hard-coded) |
-| `n_simulations` | `Code/sim/R code wrapper.R` | 10 |
-| `n_simulations` | `Code/sim/predict_rec_catch_final.R` | 3 (re-declared, overrides the above) |
-| `n_simulations` | `Code/test_code/run_projection_final.R` | 125 |
-| draw range | every `recDST/model_run_<ST>.R` | `1:100` (hard-coded, ignores all of the above) |
-
-### Stage 2: `Code/sim/R code wrapper.R`
-
-```
-Code/sim/R code wrapper.R
-  ├─ calibrate_rec_catch0_optimized.R   ["STEP 1"]
-  ├─ calibration_routine_final.R        ["STEP 2"]
-  │    └─ calibrate_rec_catch1_final.R  (re-sourced inside internal loops)
-  └─ predict_rec_catch_final.R          ["STEP 3"]
-```
-
-All three unconditional. Must be launched separately — `model_wrapper.do` never
-references it.
+`proto` defaults to **0 (OFF)** 
 
 ### Stage 3: `Run_Model.R` — known broken as committed
 
@@ -255,8 +213,7 @@ The developer team is in the process of fixing these issues.
 
 A run fails on the first draw of the first state attempted. This is consistent with a
 rename inside `Code/sim/` that did not update its callers, and the contents of
-`Code/archive/` support that reading. **The developers are aware; a fix may exist on an
-unpushed branch.**
+`Code/archive/` support that reading. **The developers are aware.**
 
 `Code/sim/run_state_model.R` carries the same two broken `source()` calls plus a third
 defect of its own — it calls `apply_directed_trips_regs()`, which is never sourced
@@ -367,12 +324,9 @@ release numbers, percent difference from status quo, percent under harvest targe
   three places.
 
 **Pipeline structure**
-- Three entry points, zero code-level links between them. Stage ordering exists only in a
-  maintainer's head.
+- two entry points, zero code-level links between them. 
 - Three toggles are defined but gate nothing; one (`angler_demogs`) has no explanatory
   comment at all.
-- `assemblemriplists` is the only definition point for four widely-read globals, with no
-  fallback default.
 - `$developer` is required 
 
 **Portability**
