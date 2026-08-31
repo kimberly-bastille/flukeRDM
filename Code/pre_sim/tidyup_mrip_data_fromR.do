@@ -47,4 +47,17 @@ foreach l in $catchlist $triplist $b2list $sizelist {
 save `l', replace
 }
 
+
+/* just trips */
+foreach l in $triplist {
+
+	use `l', clear
+	/* enforce other variables as numeric */
+	foreach var of varlist cnty{
+		destring `var', replace
+	}
+
+}
+
+
 display "Finished tidying MRIP files."
