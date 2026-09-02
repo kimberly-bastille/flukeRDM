@@ -11,14 +11,14 @@ Inputs:     fit_NAA_NORTH_2024.csv
 			J1_2024Summer_Flounder.csv
 			J1_2026Summer_Flounder.csv
 Outputs:   
-			SummerFlounder_projectedNAA_`vintage_string'.dta
-			SummerFlounder_historicalNAA_`vintage_string'.dta
-			Scup_projectedNAA_`vintage_string'.dta
-			Scup_historicalNAA_`vintage_string'.dta
-			BlackSeaBassSouth_projectedNAA_`vintage_string'.dta
-			BlackSeaBassSouth_historicalNAA_`vintage_string'.dta
-			BlackSeaBassNorth_projectedNAA_`vintage_string'.dta
-			BlackSeaBassNorth_historicalNAA_`vintage_string'.dta
+			SummerFlounder_projectedNAA
+			SummerFlounder_historicalNAA
+			Scup_projectedNAA
+			Scup_historicalNAA
+			BlackSeaBassSouth_projectedNAA
+			BlackSeaBassSouth_historicalNAA
+			BlackSeaBassNorth_projectedNAA
+			BlackSeaBassNorth_historicalNAA
 Dependencies: Google drive mounted
  Pipeline:     Step 0 of model_wrapper.do, gated by the toggle
                prep_NAA_for_dashboard. 
