@@ -327,7 +327,7 @@ if `assemblemriplists' {
 }
 
 /* Break code if triplist global is empty. */
-assert "${triplist}"!=""
+assert `'"${triplist}"'!=""
 
 	
 // 2) Estimate directed trips during calibration period
