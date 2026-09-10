@@ -17,8 +17,6 @@
 #               per-stratum means and standard errors from
 #               catch_per_trip_projection_part1.do; its output is expanded into
 #               daily catch draws by catch_per_trip_projection_part2.do.
-# Dev paths:    2 hardcoded absolute paths to a developer's local machine
-#               (E:\), at lines 112 and 116.
 #
 # NEAR-DUPLICATE of copula_modeling_calibration.R. The two files differ in
 # only about eighteen lines: the input workbook, the output directory, the
@@ -53,10 +51,6 @@
 # fail at draw 4. Running at full size therefore requires changing n_draws here
 # and in copula_modeling_projection.R as well as setting proto = 0. Flagged,
 # deliberately not changed.
-#
-# PATHS ARE HARDCODED absolute E: paths for both input and output, so this
-# script ignores the $misc_data_cd / $calib_catch_data_cd globals the Stata
-# side uses and must be edited to run on another machine.
 #
 # INVOKED FROM STATA via `rscript using', not sourced by the R wrapper. The
 # wrapper comment warns that this step "takes a while and will look like it's
@@ -111,7 +105,7 @@ misc_data_dir<-file.path(sf.data.dir, "miscellaneous")
 
 # ---- controls ----
 n_sim   <- 5000
-n_draws <- 3
+n_draws <- 30
 n_reps  <- 200
 
 statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
