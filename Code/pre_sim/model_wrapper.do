@@ -210,15 +210,15 @@ global seed 03211990
 **********************************************************************
 
 // Control which modules to run (set to 0 to skip)
-loc pull_assessment = 1		 		// Pull Assessment data
+loc pull_assessment = 0		 		// Pull Assessment data
 loc processMRIP = 1		 			// deal with casing MRIP data
 loc assemblemriplists = 1		 	// deal with casing MRIP data
 
 loc estimate_dtrips = 1				// Estimate Directed Trips 
-loc costs_per_trip = 1			// Create Distributions of costs per trip (run 1x)
-loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
+loc costs_per_trip = 0			// Create Distributions of costs per trip (run 1x)
+loc draw_angler_preferences = 0		// Create draw of angler preference parameters (run 1x)
 loc catch_per_trip1 = 1				// Part 1 of catch per trip
-loc copula_in_R = 1					// Copula model in R
+loc copula_in_R = 0					// Copula model in R
 loc catch_per_trip2 = 1				// Part 2 of catch per trip
 loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
 /* The next three toggles gate NOTHING - there is no matching `if' block for
@@ -236,8 +236,8 @@ loc catch_at_length_project=1		// Generate projection-year catch-at-length
    separately. */
 loc catch_per_trip_project=1       // Generate projection-year catch-per trip
 
-loc prep_NAA_for_dashboard = 1		// Pull Assessment data
-loc push_NAA_to_gdrive =1 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
+loc prep_NAA_for_dashboard = 0		// Pull Assessment data
+loc push_NAA_to_gdrive =0 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
 
 
 /* Prototype mode. ON as committed - see the header. This silently overrides
@@ -247,10 +247,10 @@ loc push_NAA_to_gdrive =1 			// Convert Assessment data to Rds, reshape to long,
    sets its own n_simulations (currently 10), so changing proto here does not
    keep the two halves of the pipeline in step. */
 // Prototyping
-local proto = 0
+local proto = 1
 
 if `proto' {
-	global ndraws 3
+	global ndraws 30
 }
 * === BEGIN REFACTOR VALIDATION HARNESS (config) ===
 /************************************
