@@ -96,11 +96,18 @@ library(writexl)
 library(plyr)
 library(conflicted)
 library(haven)
-
+library(here)
 conflicts_prefer(dplyr::filter)
 conflicts_prefer(dplyr::select)
 conflicts_prefer(dplyr::mutate)
 conflicts_prefer(dplyr::summarise)
+conflicts_prefer(here::here)
+
+here::i_am("Code/pre_sim/copula_modeling_projection.R")
+source(here("Code", "helpers", "developer_setup.R"))
+source(here("Code","helpers","naa_helpers.R"))
+
+misc_data_dir<-file.path(sf.data.dir, "miscellaneous")
 
 # ---- controls ----
 n_sim   <- 5000
@@ -109,11 +116,12 @@ n_reps  <- 200
 
 statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
 
-input_file <- "E:/Lou_projects/flukeRDM/2028_mgt_cycle/miscellaneous/projected_mrip_catch_processed.xlsx"
+
+input_file <- file.path(misc_data_dir,"projected_mrip_catch_processed.xlsx")
 
 full_df <- readxl::read_xlsx(input_file)
+output_dir <- file.path(sf.data.dir, "proj_catch_draws") 
 
-output_dir <- "E:/Lou_projects/flukeRDM/2028_mgt_cycle/proj_catch_draws"
 
 # ---- helper functions ----
 
