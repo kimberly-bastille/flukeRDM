@@ -164,7 +164,7 @@ global fed_holidays_y2 "inlist(day_y2, td(01jan2026), td(19jan2026), td(16feb202
 global leap_yr_days "td(29feb2024)" 
 
 * Number of model iterations
-global ndraws 100
+global ndraws 30
 
 * set years of which to pull the NEFSC trawl survey data
 global NEFSC_svy_yrs "inlist(year,2024, 2023, 2022)"
@@ -216,9 +216,9 @@ loc assemblemriplists = 1		 	// deal with casing MRIP data
 
 loc estimate_dtrips = 1				// Estimate Directed Trips 
 loc costs_per_trip = 0			// Create Distributions of costs per trip (run 1x)
-loc draw_angler_preferences = 0		// Create draw of angler preference parameters (run 1x)
+loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
 loc catch_per_trip1 = 1				// Part 1 of catch per trip
-loc copula_in_R = 0					// Copula model in R
+loc copula_in_R = 1					// Copula model in R
 loc catch_per_trip2 = 1				// Part 2 of catch per trip
 loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
 /* The next three toggles gate NOTHING - there is no matching `if' block for
