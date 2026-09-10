@@ -1,0 +1,4 @@
+# Refactor validation harness (catch_per_trip refactor). Data copies are local evidence,
+# not source: keep the tooling and the text reports, ignore the datasets.
+*.dta
+*.xlsx
