@@ -252,38 +252,6 @@ local proto = 1
 if `proto' {
 	global ndraws 20
 }
-* === BEGIN REFACTOR VALIDATION HARNESS (config) ===
-/************************************
- Refactor validation harness for the catch-per-trip refactor.
- With a validate_* toggle set to 1, the matching harness block below runs
- the _refactored version of that step FIRST, then the original version
- LAST, copies both sets of outputs into $refval_cd, and compares them
- exactly (cf + datasignature on .dta and on the xlsx as imported). The
- original runs last, so the production paths hold its output and the rest
- of the pipeline (the R copula step in particular) consumes exactly what a
- harness-free run would. A validate_* toggle therefore also skips the
- step's own call: the original has already run.
- Comparison reports land in $refval_cd as refval_report_<part>_<stamp>.log.
- Every line between a BEGIN/END marker pair is harness; delete those lines
- (and Code/refactor_validation/) to remove the harness without touching
- the surrounding code.
-**************************************/
-local validate_catch_per_trip1      = 1   // 1 = compare catch_per_trip_calibration_part1 _refactored vs original (step 5a)
-local validate_catch_per_trip_proj1 = 1   // 1 = compare catch_per_trip_projection_part1 _refactored vs original (step 9a)
-local validate_catch_per_trip2      = 1   // 1 = compare calibration_catch_per_trip_part2 _refactored vs original (step 5c)
-local validate_catch_per_trip_proj2 = 1   // 1 = compare catch_per_trip_projection_part2 _refactored vs original (step 9c)
-local refval_copy_draws = 3               // part2: draws 1..this of EVERY state are copied aside (both sides) for cf;
-                                          //   every state x draw is fingerprinted regardless. Each copy is a full
-                                          //   catch-draw file (~1M rows), so 9 states x 2 sides x this many files:
-                                          //   raise to $ndraws only if disk allows.
-local refval_cf_verbose = 0               // 1 = cf also lists every differing observation (large logs)
-
-global refval_cd "${here}/Code/refactor_validation"
-if `validate_catch_per_trip1' | `validate_catch_per_trip_proj1' | `validate_catch_per_trip2' | `validate_catch_per_trip_proj2' {
-	capture mkdir "$refval_cd"
-	do "${refval_cd}/refval_tools.do"
-}
-* === END REFACTOR VALIDATION HARNESS (config) ===
 
 **************************************************Model calibration ************************************************** 
 
@@ -327,7 +295,7 @@ if `assemblemriplists' {
 }
 
 /* Break code if triplist global is empty. */
-assert `'"${triplist}"'!=""
+assert `"${triplist}"'!=""
 
 	
 // 2) Estimate directed trips during calibration period
@@ -361,47 +329,6 @@ if `draw_angler_preferences' {
 * 5) Estimate catch-per-trip at the month and mode level
 		// a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
 
-* === BEGIN REFACTOR VALIDATION HARNESS (catch_per_trip calibration part1) ===
-if `validate_catch_per_trip1' {
-	di "REFVAL cal_part1: running _refactored first, then the original, then comparing"
-	refval_stamp
-	local refval_ts "`r(ts)'"
-
-	/* every file part1 writes; the xlsx is compared as imported, see refval_tools.do */
-	local refval_p1_files `""$misc_data_cd\baseline_mrip_catch_processed.xlsx""'
-	local refval_p1_files `"`refval_p1_files' "$misc_data_cd\mrip_catch_calib_state_mode.dta""'
-	local refval_p1_files `"`refval_p1_files' "$misc_data_cd\mrip_catch_calib_state.dta""'
-	local refval_p1_files `"`refval_p1_files' "$misc_data_cd\mrip_catch_calib_state_mode_wave.dta""'
-
-	/************************************
-	 RNG state (main and sort) is saved before the first (_refactored) run and
-	 restored before the original's run, so both start from the same state AND
-	 the original starts from exactly the state it would have had without the
-	 harness. Part1 draws no random numbers; the block is kept identical to
-	 the part2 block on purpose.
-	**************************************/
-	local refval_rng0 `c(rngstate)'
-	local refval_sort0 `c(sortrngstate)'
-
-	do "$input_code_cd\catch_per_trip_calibration_part1_refactored.do"
-	refval_capture , part(cal_part1) side(new) ts(`refval_ts') files(`refval_p1_files') copyfiles(`refval_p1_files')
-
-	set rngstate `refval_rng0'
-	set sortrngstate `refval_sort0'
-	do "$input_code_cd\catch_per_trip_calibration_part1.do"
-	refval_capture , part(cal_part1) side(old) ts(`refval_ts') files(`refval_p1_files') copyfiles(`refval_p1_files')
-
-	refval_compare , part(cal_part1) ts(`refval_ts') verbose(`refval_cf_verbose') ///
-		newlabel(catch_per_trip_calibration_part1_refactored.do) oldlabel(catch_per_trip_calibration_part1.do)
-	local refval_pass = r(pass)
-	local refval_report "`r(report)'"
-	if `refval_pass' di as result "REFVAL cal_part1: PASS -- report: `refval_report'"
-	else di as error "REFVAL cal_part1: FAIL -- see `refval_report'"
-
-	/* the original already ran (last), so production paths hold its output: skip step 5a */
-	local catch_per_trip1 = 0
-}
-* === END REFACTOR VALIDATION HARNESS (catch_per_trip calibration part1) ===
 if `catch_per_trip1' {
 	di "Estimate catch-per-trip at the month and mode level"
 	do "$input_code_cd\catch_per_trip_calibration_part1.do"
@@ -420,63 +347,6 @@ if `copula_in_R' {
 
 		// c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
 
-* === BEGIN REFACTOR VALIDATION HARNESS (catch_per_trip calibration part2) ===
-if `validate_catch_per_trip2' {
-	di "REFVAL cal_part2: running _refactored first, then the original, then comparing (9 states x $ndraws draws)"
-
-	/* the nine states part2 loops over, in its order */
-	local refval_states "MA RI CT NY NJ DE MD VA NC"
-
-	/* part2 needs the R copula output for every state x draw; stop here if any is missing */
-	refval_draw_files , dir("$calib_catch_data_cd") prefix(calib_catch_draws_raw) states(`refval_states') ndraws($ndraws)
-	local refval_raw `"`r(files)'"'
-	foreach f of local refval_raw {
-		confirm file `"`f'"'
-	}
-
-	refval_stamp
-	local refval_ts "`r(ts)'"
-
-	/* every file part2 writes: the demographics pool, then one file per state x draw */
-	refval_draw_files , dir("$calib_catch_data_cd") prefix(calib_catch_draws) states(`refval_states') ndraws($ndraws)
-	local refval_p2_files `""$misc_data_cd\angler_dems.dta" `r(files)'"'
-	/* subset copied aside for cf: draws 1..refval_copy_draws of every state; the rest are fingerprint only */
-	local refval_ncopy = min(`refval_copy_draws', $ndraws)
-	refval_draw_files , dir("$calib_catch_data_cd") prefix(calib_catch_draws) states(`refval_states') ndraws(`refval_ncopy')
-	local refval_p2_copy `""$misc_data_cd\angler_dems.dta" `r(files)'"'
-
-	/************************************
-	 RNG state (main and sort) is saved before the first (_refactored) run and
-	 restored before the original's run, so both start from the same state AND
-	 the original starts from exactly the state it would have had without the
-	 harness. Part2 sets no seed and samples with replacement at every state x
-	 draw (main RNG), and every sort / merge / duplicates drop in it breaks
-	 ties with the sort RNG: this save/restore is what makes old and new
-	 comparable. Nothing between the two runs may sort or sample;
-	 refval_capture only copies and fingerprints.
-	**************************************/
-	local refval_rng0 `c(rngstate)'
-	local refval_sort0 `c(sortrngstate)'
-
-	do "$input_code_cd\calibration_catch_per_trip_part2_refactored.do"
-	refval_capture , part(cal_part2) side(new) ts(`refval_ts') files(`refval_p2_files') copyfiles(`refval_p2_copy')
-
-	set rngstate `refval_rng0'
-	set sortrngstate `refval_sort0'
-	do "$input_code_cd\calibration_catch_per_trip_part2.do"
-	refval_capture , part(cal_part2) side(old) ts(`refval_ts') files(`refval_p2_files') copyfiles(`refval_p2_copy')
-
-	refval_compare , part(cal_part2) ts(`refval_ts') verbose(`refval_cf_verbose') ///
-		newlabel(calibration_catch_per_trip_part2_refactored.do) oldlabel(calibration_catch_per_trip_part2.do)
-	local refval_pass = r(pass)
-	local refval_report "`r(report)'"
-	if `refval_pass' di as result "REFVAL cal_part2: PASS -- report: `refval_report'"
-	else di as error "REFVAL cal_part2: FAIL -- see `refval_report'"
-
-	/* the original already ran (last), so production paths hold its output: skip step 5c */
-	local catch_per_trip2 = 0
-}
-* === END REFACTOR VALIDATION HARNESS (catch_per_trip calibration part2) ===
 if `catch_per_trip2' {
     	di "Generating estimates of simulated total harvest based on random draws"
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
@@ -517,98 +387,13 @@ if `catch_per_trip_project'{
 		 *use MRIP catch data from the last THREE full years. 
 		 
 		//a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
-* === BEGIN REFACTOR VALIDATION HARNESS (catch_per_trip projection part1) ===
-	if `validate_catch_per_trip_proj1' {
-		di "REFVAL proj_part1: running _refactored first, then the original, then comparing"
-		refval_stamp
-		local refval_ts "`r(ts)'"
-
-		/* the only file projection part1 writes; compared as imported, see refval_tools.do */
-		local refval_pp1_files `""$misc_data_cd\projected_mrip_catch_processed.xlsx""'
-
-		/* RNG state saved and restored as in the calibration block (part1 draws nothing) */
-		local refval_rng0 `c(rngstate)'
-		local refval_sort0 `c(sortrngstate)'
-
-		do "$input_code_cd\catch_per_trip_projection_part1_refactored.do"
-		refval_capture , part(proj_part1) side(new) ts(`refval_ts') files(`refval_pp1_files') copyfiles(`refval_pp1_files')
-
-		set rngstate `refval_rng0'
-		set sortrngstate `refval_sort0'
-		do "$input_code_cd\catch_per_trip_projection_part1.do"
-		refval_capture , part(proj_part1) side(old) ts(`refval_ts') files(`refval_pp1_files') copyfiles(`refval_pp1_files')
-
-		refval_compare , part(proj_part1) ts(`refval_ts') verbose(`refval_cf_verbose') ///
-			newlabel(catch_per_trip_projection_part1_refactored.do) oldlabel(catch_per_trip_projection_part1.do)
-		local refval_pass = r(pass)
-		local refval_report "`r(report)'"
-		if `refval_pass' di as result "REFVAL proj_part1: PASS -- report: `refval_report'"
-		else di as error "REFVAL proj_part1: FAIL -- see `refval_report'"
-	}
-	else {
-		/* no harness: run step 9a exactly as before */
-* === END REFACTOR VALIDATION HARNESS (catch_per_trip projection part1) ===
 		 do "$input_code_cd\catch_per_trip_projection_part1.do"
-* === BEGIN REFACTOR VALIDATION HARNESS (catch_per_trip projection part1, closing brace) ===
-	}
-* === END REFACTOR VALIDATION HARNESS (catch_per_trip projection part1, closing brace) ===
 
 		//b) use copula model (in R) to simulate harvest and discards per-trip
 		rscript using "$input_code_cd\copula_modeling_projection.R"
 		
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
-* === BEGIN REFACTOR VALIDATION HARNESS (catch_per_trip projection part2) ===
-	if `validate_catch_per_trip_proj2' {
-		di "REFVAL proj_part2: running _refactored first, then the original, then comparing (9 states x $ndraws draws)"
-
-		/* the nine states part2 loops over, in its order */
-		local refval_states "MA RI CT NY NJ DE MD VA NC"
-
-		/* part2 needs the R copula output for every state x draw; stop here if any is missing */
-		refval_draw_files , dir("$proj_catch_data_cd") prefix(proj_catch_draws_raw) states(`refval_states') ndraws($ndraws)
-		local refval_raw `"`r(files)'"'
-		foreach f of local refval_raw {
-			confirm file `"`f'"'
-		}
-
-		refval_stamp
-		local refval_ts "`r(ts)'"
-
-		/* every file projection part2 writes: one per state x draw */
-		refval_draw_files , dir("$proj_catch_data_cd") prefix(proj_catch_draws) states(`refval_states') ndraws($ndraws)
-		local refval_pp2_files `"`r(files)'"'
-		/* subset copied aside for cf: draws 1..refval_copy_draws of every state; the rest are fingerprint only */
-		local refval_ncopy = min(`refval_copy_draws', $ndraws)
-		refval_draw_files , dir("$proj_catch_data_cd") prefix(proj_catch_draws) states(`refval_states') ndraws(`refval_ncopy')
-		local refval_pp2_copy `"`r(files)'"'
-
-		/* RNG state (main and sort) saved and restored as in the calibration
-		   part2 block; projection part2 samples and sorts the same way */
-		local refval_rng0 `c(rngstate)'
-		local refval_sort0 `c(sortrngstate)'
-
-		do "$input_code_cd\catch_per_trip_projection_part2_refactored.do"
-		refval_capture , part(proj_part2) side(new) ts(`refval_ts') files(`refval_pp2_files') copyfiles(`refval_pp2_copy')
-
-		set rngstate `refval_rng0'
-		set sortrngstate `refval_sort0'
 		do "$input_code_cd\catch_per_trip_projection_part2.do"
-		refval_capture , part(proj_part2) side(old) ts(`refval_ts') files(`refval_pp2_files') copyfiles(`refval_pp2_copy')
-
-		refval_compare , part(proj_part2) ts(`refval_ts') verbose(`refval_cf_verbose') ///
-			newlabel(catch_per_trip_projection_part2_refactored.do) oldlabel(catch_per_trip_projection_part2.do)
-		local refval_pass = r(pass)
-		local refval_report "`r(report)'"
-		if `refval_pass' di as result "REFVAL proj_part2: PASS -- report: `refval_report'"
-		else di as error "REFVAL proj_part2: FAIL -- see `refval_report'"
-	}
-	else {
-		/* no harness: run step 9c exactly as before */
-* === END REFACTOR VALIDATION HARNESS (catch_per_trip projection part2) ===
-		do "$input_code_cd\catch_per_trip_projection_part2.do"
-* === BEGIN REFACTOR VALIDATION HARNESS (catch_per_trip projection part2, closing brace) ===
-	}
-* === END REFACTOR VALIDATION HARNESS (catch_per_trip projection part2, closing brace) ===
 		
 		//d) compare estimates of mean projected catch to MRIP data to ensure consistency and remove extraneous columns from projected catch draw data
 		do "$input_code_cd\compare_projection_data_to_MRIP.do"

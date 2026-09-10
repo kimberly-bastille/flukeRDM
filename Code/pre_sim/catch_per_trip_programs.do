@@ -1,10 +1,10 @@
 /*******************************************************************************
  Script:       catch_per_trip_programs.do
  Purpose:      Stata programs shared by the catch-per-trip scripts
-               (catch_per_trip_calibration_part1_refactored.do,
-               catch_per_trip_projection_part1_refactored.do,
-               calibration_catch_per_trip_part2_refactored.do and
-               catch_per_trip_projection_part2_refactored.do). Each program
+               (catch_per_trip_calibration_part1.do,
+               catch_per_trip_projection_part1.do,
+               calibration_catch_per_trip_part2.do and
+               catch_per_trip_projection_part2.do). Each program
                is one block that the pre-refactor scripts repeated verbatim,
                or with one or two parameters changed. Nothing here runs on
                its own: the file only DEFINES programs. Each caller does this
@@ -41,21 +41,21 @@
                (make_domain_expr, decode_svy_domains, split_domain_string).
                Programs with no groundfish counterpart are prefixed too.
 
- Equivalence:  Every program body is the original block with its repeated
-               copies collapsed. Commands are issued in the original order;
-               nothing is reordered, dropped or added, except the
-               output-identical deviations documented in place: D-1 at
-               sf_prep_mrip_trip_catch, and for part2 the message text of
-               the unreachable guard in sf_sample_catch_by_mode_wave (its
-               header) and the macro-only changes noted in the part2
-               callers. The part2 programs also keep every sort, merge,
-               duplicates drop and egen group of the original, including
-               ones whose result is never used, because each of them
-               consumes the sort RNG and the tie order of later sorts
-               depends on it. Oddities in the original are kept on purpose
-               and marked PRESERVED, because the refactored scripts must
-               reproduce the original outputs exactly.
-
+ History:      These programs were extracted from four catch-per-trip scripts
+               that had each repeated the same blocks. "The original" in the
+               notes below means those pre-refactor scripts; they are in git
+               history, before the retirement commit. The extraction was
+               validated by exact-match comparison of every output file, old
+               against new. Two things follow, and both matter when editing:
+               (1) Behaviour marked PRESERVED looks like a mistake and is kept
+               on purpose - an always-true condition, a variable assigned and
+               never read, an unreachable guard. Read the note at each site
+               before changing it.
+               (2) The part2 programs keep every sort, merge, duplicates drop
+               and egen group of the original, including ones whose result is
+               never used, because each consumes the sort RNG and the tie
+               order of later sorts depends on it. Deleting an apparently dead
+               sort here changes the sampled output.
  Inputs:       None directly. The part1 programs read the globals the
                callers already depend on: $triplist, $catchlist, and the
                year-window global whose NAME the caller passes
@@ -155,7 +155,7 @@ end ;
                  Part A:  state wv2 mode1 common_dom
                  B.1:     state mode1 common_dom
                  B.2:     state common_dom
-                 B.3:     state mode1 wv2 common_dom   (see D-1 below)
+                 B.3:     state mode1 wv2 common_dom   (see the note below)
    yearglobal  : NAME of the global holding the year/wave filter expression
                  (calibration_year or projection_catch_per_trip_years).
                  Applied as   keep if ${`yearglobal'}
@@ -166,14 +166,14 @@ end ;
                  it; Part B does not, and then issues no save at all, exactly
                  as the original Part B blocks did not.
 
- Deviation D-1 (output-identical): the original B.3 block created its wave
- string as w2 immediately after gen st2, and never created wv2. This program
- always creates wv2 after the North Carolina filter, where Part A, B.1 and
- B.2 created it. The value is string(wave) either way; B.3 uses it only
- inside my_dom_id_string, whose value is therefore unchanged, and B.3 saves
- no dataset containing the variable (its .dta output gets its wave column
- from splitting the domain string). Only the in-memory variable name and
- position differ.
+ Note on the B.3 wave string (output-identical to the original): this
+ program always creates wv2 after the North Carolina filter, for every
+ domain including B.3. The original B.3 block alone created its wave string
+ as w2 immediately after gen st2, and never created wv2. The value is
+ string(wave) either way; B.3 uses it only inside my_dom_id_string, whose
+ value is therefore unchanged, and B.3 saves no dataset containing the
+ variable (its .dta output gets its wave column from splitting the domain
+ string). Only the in-memory variable name and position differ.
 ******************************************************************************/
 capture program drop sf_prep_mrip_trip_catch ;
 program define sf_prep_mrip_trip_catch ;
@@ -247,7 +247,7 @@ program define sf_prep_mrip_trip_catch ;
     /* keep only NC north based on county delineation from Tracey */
     replace common_dom="ZZ"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187) ;
 
-    /* D-1: wv2 is created here in every instance (see header) */
+    /* wv2 is created here in every instance - see the header note */
     tostring wave, gen(wv2) ;
     tostring year, gen(yr2) ;
 
