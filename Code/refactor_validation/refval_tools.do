@@ -1,11 +1,10 @@
 /*******************************************************************************
  Script:       refval_tools.do
- Purpose:      Comparison tooling for the refactor validation harness in
-               model_wrapper.do (catch-per-trip refactor: Pair A =
-               catch_per_trip_calibration_part1 / catch_per_trip_projection
-               _part1; Pair B = calibration_catch_per_trip_part2 /
-               catch_per_trip_projection_part2). Defines the programs the
-               harness blocks call:
+ Purpose:      Old-vs-new comparison tooling for validating a Stata refactor:
+               run the old and the new version of a step, capture what each
+               wrote, and prove the two are byte-for-byte identical. Written
+               for the catch-per-trip refactor and kept afterwards as reusable
+               tooling - see Status below. Defines:
                  refval_stamp        timestamp for report file names
                  refval_capture      fingerprint (and optionally copy aside) the
                                      outputs of one run (side = new or old)
@@ -19,9 +18,10 @@
  Origin:       Adapted from groundfishRDM/Code/refactor_validation/
                refval_tools.do (branch refactor_calib). The program bodies are
                unchanged; only this header and the report labels in
-               refval_compare differ (fluke runs the refactored script FIRST
-               and the original LAST, see below).
- Inputs:       $refval_cd, set by the harness config block in model_wrapper.do.
+               refval_compare differ (fluke ran the new script FIRST and the
+               old one LAST, see Run order below).
+ Inputs:       $refval_cd, the directory to write comparison output to. The
+               caller sets it; there is no longer a harness block that does.
  Outputs:      All under $refval_cd:
                  <stem>_new.<ext>, <stem>_old.<ext>      copies of pipeline outputs
                  refval_fp_<part>_<side>_<ts>.dta        one row per output file
@@ -40,14 +40,18 @@
                checksum); the imported-data checks and cf still run and are
                reported, as diagnostics for a FAIL. (No Pair A or Pair B
                output is a csv; kept for completeness.)
- Run order:    "new" is the _refactored script and runs FIRST; "old" is the
-               original production script and runs LAST, so that after the
-               harness the production paths hold exactly what a harness-free
-               run would have produced and the rest of the pipeline (the R
-               copula step in particular) consumes the original's output.
- Retirement:   After the user confirms an exact match on a full production
-               run, the harness blocks in model_wrapper.do, this folder and
-               the original scripts are removed together.
+ Run order:    The convention these programs assume: "new" is the refactored
+               script and runs FIRST, "old" is the incumbent production script
+               and runs LAST, so that afterwards the production paths hold
+               exactly what a harness-free run would have produced and the
+               rest of the pipeline consumes the incumbent's output.
+ Status:       The catch-per-trip refactor this was written for is retired:
+               its harness blocks are out of model_wrapper.do and the old
+               scripts are gone. This file is kept, unused by the pipeline,
+               for the next refactor. To use it: set $refval_cd, do this
+               file, then call refval_capture once per side and refval_compare
+               once. model_wrapper.do in git history, before the retirement
+               commit, holds four worked examples.
 *******************************************************************************/
 
 #delimit ;

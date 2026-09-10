@@ -27,7 +27,7 @@ diverged slightly, the team has focused on groundfishRDM in advance of the 2027 
 
 | Path | Contents |
 |------|----------|
-| `Code/pre_sim/` | Stage 1. Stata data processing (17 `.do` files) plus the R scripts Stata invokes via `rscript using` — the two copula modeling scripts and Google Drive pushes. Orchestrated by `model_wrapper.do`. |
+| `Code/pre_sim/` | Stage 1. Stata data processing (18 `.do` files) plus the R scripts Stata invokes via `rscript using` — the two copula modeling scripts and Google Drive pushes. Orchestrated by `model_wrapper.do`. |
 | `Code/sim/` | Stage 2. R calibration and simulation. Orchestrated by `R code wrapper.R`. Also holds `run_state_model.R`, `apply_directed_trips_regs.R` (an incomplete consolidation of the nine per-state scripts) and `required_packages.R`. |
 | `Code/helpers/` | Leaf utilities: `developer_setup.R` / `developer_setup_stata.do` (path bootstrap), Google Drive auth, NAA helpers. Not orchestrators. |
 | `Code/test_code/` | 21 development and QA scratch scripts (`_test1`, `_test2`, `_revised_v3`, `_nochange` naming). Not called by any wrapper. Archive candidate. |
@@ -154,30 +154,41 @@ before Stage 2 starts, or that either ran before Stage 3.
 ### Stage 1: `Code/pre_sim/model_wrapper.do`
 
 ```
- 0.                                      developer_setup_stata.do            (unconditional)
- 1.  pull_assessment          = 1        get_assessment_from_gdrive.do
- 2.  processMRIP              = 1        MRIP_column_cases.do
- 3.  assemblemriplists        = 1        MRIP_lists.do
- 4.  estimate_dtrips          = 1        directed_trips_calibration.do
-       4a.                               └─ set_regulations.do               (nested, unconditional)
- 5.  costs_per_trip           = 1        survey_trip_costs.do
- 6.  draw_angler_preferences  = 1        estimate_angler_preferences.do
- 7.  catch_per_trip1          = 1        catch_per_trip_calibration_part1.do
- 8.  copula_in_R              = 1        copula_modeling_calibration.R
- 9.  catch_per_trip2          = 1        calibration_catch_per_trip_part2.do
-10.  compare_calibration_MRIP = 1        compare_calibration_data_to_MRIP.do
-11.  generate_baseline        = 1        calibration_catch_at_length.do
-12.  catch_at_length_project  = 1        projected_catch_at_length.do
-13.  catch_per_trip_project   = 1        [meta-toggle — all four run or skip together]
-       13a.                              ├─ catch_per_trip_projection_part1.do
-       13b.                              ├─ copula_modeling_projection.R
-       13c.                              ├─ catch_per_trip_projection_part2.do
-       13d.                              └─ compare_projection_data_to_MRIP.do
+      (none)                    developer_setup_stata.do            (unconditional)
+ 0.   pull_assessment           get_assessment_from_gdrive.do
+      prep_NAA_for_dashboard    rdb_processing_NAA.do
+      push_NAA_to_gdrive        rdb_convert_and_push_NAA_to_gdrive.R
+ 1a.  processMRIP               MRIP_column_cases.do
+ 1b.  assemblemriplists         MRIP_lists.do
+ 2.   estimate_dtrips           directed_trips_calibration.do
+                                └─ set_regulations.do               (nested, unconditional)
+ 3.   costs_per_trip            survey_trip_costs.do
+ 4.   draw_angler_preferences   estimate_angler_preferences.do
+ 5a.  catch_per_trip1           catch_per_trip_calibration_part1.do
+ 5b.  copula_in_R               copula_modeling_calibration.R
+ 5c.  catch_per_trip2           calibration_catch_per_trip_part2.do
+ 6.   compare_calibration_MRIP  compare_calibration_data_to_MRIP.do
+ 7.   generate_baseline         calibration_catch_at_length.do
+ 8.   catch_at_length_project   projected_catch_at_length.do
+ 9.   catch_per_trip_project    [meta-toggle — all four run or skip together]
+      9a.                       ├─ catch_per_trip_projection_part1.do
+      9b.                       ├─ copula_modeling_projection.R
+      9c.                       ├─ catch_per_trip_projection_part2.do
+      9d.                       └─ compare_projection_data_to_MRIP.do
+10.   (none)                    heading only, no code — see Known Issues
 ```
 
-**About the toggles.** Sixteen toggle-gated sections, defined as Stata *locals* in one
-contiguous block under the `EXECUTION CONTROL` banner at `model_wrapper.do` lines 143–164,
-uniformly `0`/`1`. Note two departures from groundfishRDM's one-toggle-per-script pattern:
+The four catch-per-trip scripts (5a, 5c, 9a, 9c) share their repeated blocks through
+`Code/pre_sim/catch_per_trip_programs.do`, which each of them `do`s at its top. That file
+only defines Stata programs — it is not a wrapper step and has no toggle.
+
+**About the toggles.** Eighteen toggles, defined as Stata *locals* in one contiguous block
+under the `EXECUTION CONTROL` banner at `model_wrapper.do` lines 213–240, uniformly `0`/`1`.
+Fifteen gate a step; three gate nothing (below). The step numbering above is the wrapper's
+own, taken from its `// n)` comments. **The committed `0`/`1` values are a working state,
+not a specification** — whoever ran the pipeline last left them where they needed them, so
+read them out of the file before a run rather than trusting this page. Note two departures
+from groundfishRDM's one-toggle-per-script pattern:
 
 - `catch_per_trip_project` is a **meta-toggle** gating four scripts as a unit.
 - **Three toggles are defined but gate nothing.** `prep_cpt_for_dashboard` (0/OFF,
@@ -193,27 +204,25 @@ uniformly `0`/`1`. Note two departures from groundfishRDM's one-toggle-per-scrip
 `set_regulations.do` requires **manual editing every year** to enter status-quo
 regulations. It is reached only through `estimate_dtrips`.
 
-### The pipeline runs in prototype mode by default
+### The draw count is set in three places and linked in none
 
-`proto` defaults to **1 (ON)** — the opposite of groundfishRDM. Three observations
-compound:
+As committed, `model_wrapper.do:167` sets `global ndraws 30`; `local proto = 1` (`:250`)
+sets `global ndraws 30` again (`:253`), so `proto` currently changes nothing. Both copula
+scripts hard-code `n_draws <- 30` (`copula_modeling_calibration.R:106`,
+`copula_modeling_projection.R:108`) and never read `$ndraws`.
 
-1. `model_wrapper.do` sets `global ndraws 100`.
-2. `local proto = 1` then overwrites it: `global ndraws 3`.
-3. Both copula scripts hard-code `n_draws <- 3` and never read `$ndraws`.
+Those two numbers must be changed **together**. Downstream Stata scripts loop
+`forv i=1/$ndraws` over draw files that only the copula step writes, so if `$ndraws`
+exceeds `n_draws`, catch-per-trip part2 stops at the first missing draw file — partway
+into a step that runs for hours. Nothing checks the two against each other, and the
+copula step must be re-run after `n_draws` changes.
 
-Downstream Stata scripts loop `forv i=1/$ndraws` over draw files that only the copula step
-writes. **So setting `proto = 0` for a production run makes the pipeline look for 100 draw
-files where only 3 exist, and fail at draw 4.** A full-size run requires editing `n_draws`
-in *both* copula scripts as well as clearing `proto`. Nothing in the code or comments says
-so.
-
-Iteration counts disagree in six places and none are programmatically linked:
+Iteration counts are set in six places and none are programmatically linked:
 
 | Setting | Location | Value |
 |---|---|---|
-| `$ndraws` | `model_wrapper.do` | 100, overwritten to 3 by `proto` |
-| `n_draws` | both copula scripts | 3 (hard-coded) |
+| `$ndraws` | `model_wrapper.do:167`, set again at `:253` under `proto` | 30 |
+| `n_draws` | both copula scripts | 30 (hard-coded) |
 | `n_simulations` | `Code/sim/R code wrapper.R` | 10 |
 | `n_simulations` | `Code/sim/predict_rec_catch_final.R` | 3 (re-declared, overrides the above) |
 | `n_simulations` | `Code/test_code/run_projection_final.R` | 125 |
@@ -287,7 +296,8 @@ External sources
                         ▼
     copula_modeling_calibration.R / copula_modeling_projection.R
         — correlated three-species catch draws per trip (calibration and
-          projection years; two ~730-line scripts differing in ~18 lines)
+          projection years; 853- and 856-line near-duplicate scripts, ~57
+          differing lines, most of them header comments)
                         ▼
   STAGE 2 — R, Code/sim/                    [R code wrapper.R]
     iterative reallocation of harvest and discards until simulated totals match
@@ -363,8 +373,9 @@ release numbers, percent difference from status quo, percent under harvest targe
 - The Stage 3 projection path does not run as committed — two missing `source()` targets
   in every per-state script. See [Running the Pipeline](#running-the-pipeline).
 - `Code/sim/compare_savedregs_output.R` contains a syntax error and cannot be parsed.
-- The committed default is prototype mode, and switching to production requires edits in
-  three places.
+- The draw count is set independently in `model_wrapper.do` and in both copula scripts,
+  with nothing checking that they agree. They match as committed (30); if `$ndraws` is
+  raised without re-running the copula step, part2 fails partway through.
 
 **Pipeline structure**
 - Three entry points, zero code-level links between them. Stage ordering exists only in a
@@ -379,9 +390,10 @@ release numbers, percent difference from status quo, percent under harvest targe
 - Hard-coded developer-specific absolute paths reach into production files here, not just
   test scripts: `R code wrapper.R`, `calibrate_rec_catch0_optimized.R`,
   `calibration_routine_final.R`, `predict_rec_catch_final.R` (which re-hard-codes a path,
-  overriding its caller), both copula scripts, and most of `Code/test_code/`. One
-  developer's folder is spelled inconsistently between files (`E:/Lou_projects` and
-  `E:/Lou's projects`).
+  overriding its caller), and most of `Code/test_code/`. One developer's folder is spelled
+  inconsistently between files (`E:/Lou_projects` and `E:/Lou's projects`). The two copula
+  scripts were the Stage 1 instance of this and no longer are: they now resolve their
+  input and output directories from `here()` and `sf.data.dir`.
 - `get_assessment_from_gdrive.do` assumes the Google Drive client mounts at `D:`.
 - No dependency management — no `renv.lock`, no package versions specified.
 - `plyr` is attached before `dplyr` deliberately (it masks `summarize`, `count`, `mutate`,
@@ -391,8 +403,8 @@ release numbers, percent difference from status quo, percent under harvest targe
 
 **Interpreting all of this.** flukeRDM has had less development time than
 groundfishRDM, which has already received a hardening pass that flukeRDM is slated to
-receive next. Most gaps above — the broken projection path, the prototype-mode default,
-the missing global fallback, the undocumented dead toggle — look like exactly what that
+receive next. Most gaps above — the broken projection path, the unlinked draw
+counts, the missing global fallback, the undocumented dead toggle — look like exactly what that
 pass would close. 
 
 ## Documentation Index
@@ -423,7 +435,7 @@ displays, see `documentation.md` in this repository.
 | **Toggle** | A `0`/`1` local macro in `model_wrapper.do` gating whether a block runs on this pass. Setting one to `0` deletes nothing — it skips a step whose output is already on disk. |
 | **Meta-toggle** | A toggle gating several scripts as one unit rather than individually. `catch_per_trip_project` is the one instance here. |
 | **Dead toggle** | A toggle defined in the wrapper with no matching `if` block — setting it has no effect. Three exist here. |
-| **Prototype mode** | The `proto` local. When on (**the committed default**), it overwrites `$ndraws` from 100 to 3 for fast runs. |
+| **Prototype mode** | The `proto` local. When on, it re-sets `$ndraws` for fast test runs. As committed it is on but sets the same value `$ndraws` already had (30), so it changes nothing until one of the two is edited. |
 | **Entry point** | A script a person starts directly, as opposed to one that something else calls. This repository has three, and none of them calls another. |
 | **Global macro** | A Stata value defined with `global`, readable as `$name` in *any* script running later in the same session. Because they persist, a script expecting a global the wrapper never set will silently misbehave. |
 | **`svyset` / `svy:`** | Declares the survey sampling design, then runs an estimator that respects it. MRIP is a complex survey — a plain `mean` gives the wrong standard error. |
