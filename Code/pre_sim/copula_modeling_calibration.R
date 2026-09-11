@@ -103,7 +103,7 @@ misc_data_dir<-file.path(sf.data.dir, "miscellaneous")
 
 # ---- controls ----
 n_sim   <- 5000
-n_draws <- 20
+n_draws <- 30
 n_reps  <- 200
 
 statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")

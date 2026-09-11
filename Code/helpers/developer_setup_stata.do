@@ -42,11 +42,7 @@ else if inlist("$developer","TP", "ML","KB"){
 capture mkdir $sfdatadir 
 
 
-/* Note: the message below names "gfdatadir", the GroundfishRDM global. The
-   global this script actually sets is $sfdatadir. The message text is a
-   copy-paste artifact from the shared setup template; the assignment above is
-   correct. Left as-is - this session documents behavior and does not change it. */
-display "Hello $developer.  Use the global gfdatadir in place of \${here}\Data\YYYY mgmt cycle)."
+display "Hello $developer.  Use the global sfdatadir in place of \${here}\Data\YYYY mgmt cycle)."
 display "The value of datadir is: $sfdatadir"
 
 
