@@ -153,11 +153,22 @@ iterative_input_data_cd="E:/Lou_projects/flukeRDM/flukeRDM_iterative_data"
 #options("RStata.StataPath" = "\"C:\\Program Files\\Stata17\\StataMP-64\"")
 #options("RStata.StataVersion" = 17)
 
-# The comment below describes the intended design (125 calibration draws, 100
-# used); the value actually set is 10, i.e. this file is currently configured
-# for a test run, not production. Nothing links this to Stata's $ndraws.
-#Set number of original draws. We create 125 (in case some don't converge in the calibration), but only use 100 for the final run. Choose a lot fewer for test runs
-n_simulations<-10
+#Read in number of original draws.
+
+# Number of model iterations. Match Stata's $ndraws
+# (model_wrapper.do) using the argument in Stata call
+# Define arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 1) {
+  stop("Error: This script requires exactly one argument.", call. = FALSE)
+}
+n_simulations  <- as.numeric(args[1]) # Number of model iterations.
+
+# Show them, just in case.
+cat("Number of model iterations selected:", n_simulations, "\n")
+
+
+
 
 # n_draws is not referenced anywhere in this file or the scripts it sources.
 n_draws<-50 #Number of simulated trips per day

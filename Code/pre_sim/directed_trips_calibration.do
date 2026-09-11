@@ -128,7 +128,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 
 tostring wave, gen(w2)
@@ -140,10 +143,11 @@ gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
 
+/* handled in get_mrip_oracle
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
@@ -715,7 +719,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 tostring wave, gen(w2)
 tostring year, gen(year2)
@@ -726,10 +733,11 @@ gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
 
+/* handled in get_mrip_oracle
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
@@ -856,7 +864,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 
 tostring wave, gen(w2)
@@ -867,11 +878,11 @@ gen month1=substr(date, 5, 2)
 gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
-
+/* handled in get_mrip_oracle)
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
@@ -997,7 +1008,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 tostring wave, gen(w2)
 tostring year, gen(year2)
@@ -1008,10 +1022,11 @@ gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
 
+/* handled in get mrip_oracle
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
@@ -1142,7 +1157,10 @@ replace dom_id="1" if strmatch(common, "scup")
 replace dom_id="1" if strmatch(prim1_common, "scup") 
 
 * keep only NC north based on county delineation from Tracey 
-replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+* replace dom_id="2"  if state=="NC" & !inlist(cnty, 15, 29, 41, 53, 55, 139, 143, 177, 187)
+
+* all STOCK_REGION_CALC=="SOUTH" is south of Hatteras
+replace dom_id="2"  if STOCK_REGION_CALC=="SOUTH"
 
 
 tostring wave, gen(w2)
@@ -1153,11 +1171,11 @@ gen month1=substr(date, 5, 2)
 gen day1=substr(date, 7, 2)
 drop if inlist(day1,"9x", "xx") 
 destring day1, replace
-
+/* handled in get_mrip_oracle
 gen mode1="sh" if inlist(mode_fx, "1", "2", "3")
 replace mode1="pr" if inlist(mode_fx, "7")
 replace mode1="fh" if inlist(mode_fx, "4", "5")
-
+*/
 
 // Deal with Group Catch: 
 	// This bit of code generates a flag for each year-strat_id psu_id leader. (equal to the lowest of the dom_id)
