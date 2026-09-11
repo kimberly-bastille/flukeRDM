@@ -164,7 +164,7 @@ global fed_holidays_y2 "inlist(day_y2, td(01jan2026), td(19jan2026), td(16feb202
 global leap_yr_days "td(29feb2024)" 
 
 * Number of model iterations
-global ndraws 30
+global ndraws 20
 
 * set years of which to pull the NEFSC trawl survey data
 global NEFSC_svy_yrs "inlist(year,2024, 2023, 2022)"
@@ -250,7 +250,7 @@ loc push_NAA_to_gdrive =0 			// Convert Assessment data to Rds, reshape to long,
 local proto = 1
 
 if `proto' {
-	global ndraws 30
+	global ndraws 20
 }
 * === BEGIN REFACTOR VALIDATION HARNESS (config) ===
 /************************************
