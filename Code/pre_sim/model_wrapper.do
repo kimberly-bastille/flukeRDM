@@ -113,6 +113,8 @@ set varabbrev on
 
 **Adjust globals**
 
+global mrip_cal_type "cal_2018"
+
 * These need to be changed every year 
 
 /* First and last year of MRIP data.*/
@@ -296,7 +298,7 @@ if `push_NAA_to_gdrive' {
 	
 	if `pull_MRIP' {
   	di "Pulling MRIP data from oracle"
-		rscript using "$input_code_cd\get_mrip_oracle.R", args($first_mrip_year $last_mrip_year)
+		rscript using "$input_code_cd\get_mrip_oracle.R", args($mrip_cal_type $first_mrip_year $last_mrip_year)
     di "Oracle Data Pull Finished"
 
   	di "Tidying up MRIP data"

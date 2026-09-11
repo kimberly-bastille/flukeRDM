@@ -4,7 +4,7 @@
 #               from Oracle via the mriptacklebox package for a year range,
 #               lower-cases names, stamps a pull date, forces id columns to
 #               character, and writes per-element .dta files plus a combined .Rds.
-# Inputs:       Command-line args: first_year last_year. Live Oracle connection
+# Inputs:       Command-line args: mrip_calibration_year  first_year last_year. Live Oracle connection
 #               (mriptacklebox's nefscdb_con).
 # Outputs:      <sf.data.dir>/miscellaneous/mrip_{trip,catch,size,size_b2}.dta and
 #               mrip_pull<today>.Rds.
@@ -13,19 +13,20 @@
 # Pipeline:     Step 2 of model_wrapper.do (gated by pull_MRIP), invoked via
 #               `rscript using ... args(first last)`, and followed immediately by
 #               tidyup_mrip_data_fromR.do. Also runnable standalone:
-#               Rscript get_mrip_oracle.R 2023 2025.
+#               Rscript get_mrip_oracle.R cal_2018 2023 2025.
 ################################################################################
 
 
 # Define arguments
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) != 2) {
-  stop("Error: This script requires exactly two arguments.", call. = FALSE)
+if (length(args) != 3) {
+  stop("Error: This script requires exactly three arguments.", call. = FALSE)
 }
 
 #read in arguments. Ensure they are numeric
-first_yr  <- as.numeric(args[1])
-last_yr   <-  as.numeric(args[2])
+mrip_calibration_year  <- as.numeric(sub("cal_","",args[1]))
+first_yr  <- as.numeric(args[2])
+last_yr   <-  as.numeric(args[3])
 #first_yr<-2023
 #last_yr<-2025
 
