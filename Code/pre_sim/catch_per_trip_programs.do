@@ -9,10 +9,15 @@
                or with one or two parameters changed. Nothing here runs on
                its own: the file only DEFINES programs. Each caller does this
                file at its top, behind capture program drop guards.
+               Three more scripts do this file for the two state programs
+               only (sf_label_states and sf_keep_model_states):
+               directed_trips_calibration.do, calibration_catch_at_length.do
+               and survey_trip_costs.do.
 
                Programs, in the order defined:
                  make_domain_expr         build the +"_"+ join expression
                  sf_label_states          MRIP st code -> two-letter state
+                 sf_keep_model_states     keep only rows in the nine model states
                  sf_prep_mrip_trip_catch  MRIP trip+catch -> svyset trip-level data
                  sf_post_svy_by_domain    svy: mean|total by domain -> postfile
                  decode_svy_domains       r(table) column names -> my_dom_id_string
@@ -56,6 +61,11 @@
                never used, because each consumes the sort RNG and the tie
                order of later sorts depends on it. Deleting an apparently dead
                sort here changes the sampled output.
+               sf_keep_model_states, and the state-program calls from the
+               three non-catch-per-trip scripts named under Purpose, came
+               later. That change was checked by expanding each call back
+               into its body and comparing the executable lines with the
+               scripts it replaced, not by an output comparison run.
  Inputs:       None directly. The part1 programs read the globals the
                callers already depend on: $triplist, $catchlist, and the
                year-window global whose NAME the caller passes
@@ -109,8 +119,11 @@ end ;
  order the original scripts wrote the assignments. Rows with any other st
  get state == "" ; the caller decides whether to drop them.
  This nine-line block was repeated in every part1 MRIP prep block (now
- sf_prep_mrip_trip_catch) and in the FES demographic pool of calibration
- part2. No groundfishRDM program (groundfish kept its copy inline).
+ sf_prep_mrip_trip_catch), in the FES demographic pool of calibration part2,
+ and in directed_trips_calibration.do, calibration_catch_at_length.do and
+ survey_trip_costs.do. No groundfishRDM program (groundfish kept its copy
+ inline). The same nine st codes are listed in sf_keep_model_states below:
+ change the two together.
  Parameters: none. Acts on the data in memory; requires variable st.
 ******************************************************************************/
 capture program drop sf_label_states ;
@@ -124,6 +137,26 @@ program define sf_label_states ;
     replace state="DE" if st==10 ;
     replace state="VA" if st==51 ;
     replace state="NC" if st==37 ;
+end ;
+
+/******************************************************************************
+ sf_keep_model_states
+ Keeps only the rows whose numeric MRIP/FES state code st is one of the nine
+ states the model covers (MA RI CT NY NJ DE MD VA NC) and drops all others.
+ The same nine codes are labeled by sf_label_states just above: change the
+ two together.
+ This one-line filter was repeated just before most sf_label_states sites:
+ in sf_prep_mrip_trip_catch, directed_trips_calibration.do,
+ calibration_catch_at_length.do and survey_trip_costs.do. The codes are
+ written here exactly as most copies wrote them.
+ calibration_catch_at_length.do listed the same nine codes in another
+ order, which does not matter: inlist() only tests membership.
+ No groundfishRDM program.
+ Parameters: none. Acts on the data in memory. Requires numeric variable st.
+******************************************************************************/
+capture program drop sf_keep_model_states ;
+program define sf_keep_model_states ;
+    keep if inlist(st, 25, 44, 9,  36 , 34, 10, 24, 51, 37) ;
 end ;
 
 /******************************************************************************
@@ -211,7 +244,7 @@ program define sf_prep_mrip_trip_catch ;
     /* Format MRIP data for estimation */
 
     /* Ensure only relevant states, then the requested year window */
-    keep if inlist(st, 25, 44, 9,  36 , 34, 10, 24, 51, 37) ;
+    sf_keep_model_states ;
 
     keep if ${`yearglobal'} ;
 

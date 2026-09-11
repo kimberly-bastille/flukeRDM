@@ -60,10 +60,12 @@
                                 calibration_catch_per_trip_part2.do, which
                                 this toggle does not control.)
 
- PROTOTYPE MODE IS ON BY DEFAULT. `proto' = 1 overwrites $ndraws from 100 to
- 3. Running this file exactly as committed therefore produces a 3-draw test
- run, not a production run. GroundfishRDM defaults the same toggle to 0. Set
- proto = 0 for a real run.
+ PROTOTYPE MODE IS ON BY DEFAULT. When `proto' = 1, the global set in the
+ proto block (after EXECUTION CONTROL) replaces the $ndraws set under
+ "Number of model iterations". As committed, both set the same value, so
+ proto currently changes nothing. Lower the value in the proto block for a
+ quick test run. GroundfishRDM defaults the same toggle to 0. The copula R
+ scripts keep their own draw count: see the note at the proto block.
 *******************************************************************************/
 
 /**** SFSBSB RDM code wrapper ****/
@@ -240,12 +242,16 @@ loc prep_NAA_for_dashboard = 0		// Pull Assessment data
 loc push_NAA_to_gdrive =0 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
 
 
-/* Prototype mode. ON as committed - see the header. This silently overrides
-   the $ndraws 100 set above with 3, which makes a full pass through the
-   pipeline finish in a fraction of the time but produces results too noisy to
-   use. Note also that the R side does not read $ndraws at all: "R code wrapper.R"
-   sets its own n_simulations (currently 10), so changing proto here does not
-   keep the two halves of the pipeline in step. */
+/* Prototype mode. ON as committed - see the header. When on, the global below
+   replaces the $ndraws set under "Number of model iterations" above. As
+   committed both set the same value, so proto currently changes nothing. A
+   smaller value here makes a full pass finish in a fraction of the time, but
+   the results are too noisy to use.
+   The copula R scripts do not read $ndraws. copula_modeling_calibration.R and
+   copula_modeling_projection.R each set n_draws in their controls block, and
+   each must be at least $ndraws: the part2 scripts read draw files
+   1..$ndraws and fail at the first one missing. "R code wrapper.R" sets its
+   own n_simulations. Changing proto here keeps none of these in step. */
 // Prototyping
 local proto = 1
 

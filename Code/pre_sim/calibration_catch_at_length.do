@@ -24,10 +24,12 @@
                baseline_catch_at_length_region.dta,
                baseline_catch_at_length_state.csv,
                baseline_observed_catch_at_length.csv
- Dependencies: Globals $misc_data_cd, $sizelist, $b2list, $ndraws. Requires
-               compare_calibration_data_to_MRIP.do to have produced the
-               harvest and discard totals. Uses the user-written commands
-               renvarlab, dsconcat and gammafit.
+ Dependencies: Globals $misc_data_cd, $input_code_cd, $sizelist, $b2list,
+               $ndraws. Requires compare_calibration_data_to_MRIP.do to have
+               produced the harvest and discard totals. Programs
+               sf_keep_model_states and sf_label_states from
+               catch_per_trip_programs.do (done below). Uses the user-written
+               commands renvarlab, dsconcat and gammafit.
  Pipeline:     Step 7 of model_wrapper.do, gated by the toggle
                generate_baseline. Its output is read by the R calibration as
                the length distribution to draw simulated fish from, and by
@@ -47,6 +49,11 @@
 *******************************************************************************/
 
 display "calibration_catch_at_length.do: assembling baseline catch-at-length from volunteer survey, tag and MRIP length data, then fitting gamma distributions. This may take several minutes."
+
+/* Load the shared programs used below (sf_keep_model_states,
+   sf_label_states). Each is defined behind a capture program drop guard,
+   so re-running this file in the same session is safe. */
+do "$input_code_cd\catch_per_trip_programs.do"
 
 
 
@@ -331,17 +338,9 @@ sort year strat_id psu_id id_code
 replace common=subinstr(lower(common)," ","",.)
 
 * keep management unit states
-keep if inlist(st,25, 44, 9, 36, 34, 51, 10, 24, 37)
+sf_keep_model_states
 
-gen state="MA" if st==25
-replace state="MD" if st==24
-replace state="RI" if st==44
-replace state="CT" if st==9
-replace state="NY" if st==36
-replace state="NJ" if st==34
-replace state="DE" if st==10
-replace state="VA" if st==51
-replace state="NC" if st==37
+sf_label_states
 
 * keep only NC north based on county delineation from Tracey 
 drop if state=="NC" & !inlist(15, 29, 41, 53, 55, 139, 143, 177, 187) // okay to drop here because we are not estimating SE's
@@ -417,17 +416,9 @@ merge 1:m year strat_id psu_id id_code using `sl1', keep(1 3) nogen
 keep if $calibration_year
 
 * keep management unit states
-keep if inlist(st,25, 44, 9, 36, 34, 51, 10, 24, 37)
+sf_keep_model_states
 
-gen state="MA" if st==25
-replace state="MD" if st==24
-replace state="RI" if st==44
-replace state="CT" if st==9
-replace state="NY" if st==36
-replace state="NJ" if st==34
-replace state="DE" if st==10
-replace state="VA" if st==51
-replace state="NC" if st==37
+sf_label_states
 
 drop region
 gen region="NO" if inlist(state, "MA", "RI", "CT", "NY") 

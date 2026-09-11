@@ -38,19 +38,18 @@
 # supplies the dependence between them. The survey-weighted correlations
 # estimated here are what the copula is fitted to.
 #
-# CONTROLS AT THE TOP OF THE FILE, and one important consequence:
-#   n_sim   = 5000   simulated trips drawn per stratum
-#   n_draws = 3      SIMULATION DRAWS WRITTEN - see below
-#   n_reps  = 200    replicate weights used for the survey variance estimates
+# CONTROLS AT THE TOP OF THE FILE (the "---- controls ----" block), and one
+# important consequence:
+#   n_sim    simulated trips drawn per stratum
+#   n_draws  simulation draws written, one output file per state per draw
+#   n_reps   replicate weights used for the survey variance estimates
 #
-# n_draws IS HARDCODED TO 3 AND DOES NOT READ $ndraws. This is the constraint
-# that ties the whole Stata pipeline to prototype mode. model_wrapper.do sets
-# $ndraws to 100 and then, because proto defaults to 1, overwrites it with 3.
-# If someone sets proto = 0 for a "real" run, the downstream Stata scripts will
-# loop over draws 1..100 looking for files this script only wrote three of, and
-# fail at draw 4. Running at full size therefore requires changing n_draws here
-# and in copula_modeling_projection.R as well as setting proto = 0. Flagged,
-# deliberately not changed.
+# n_draws DOES NOT READ STATA'S $ndraws (set in model_wrapper.do), so the two
+# are kept in step by hand. n_draws must be at least $ndraws:
+# catch_per_trip_projection_part2.do reads draw files 1..$ndraws and fails at
+# the first one missing. A larger n_draws only writes files that nothing reads.
+# copula_modeling_calibration.R has its own n_draws, under the same rule for
+# calibration_catch_per_trip_part2.do.
 #
 # INVOKED FROM STATA via `rscript using', not sourced by the R wrapper. The
 # wrapper comment warns that this step "takes a while and will look like it's

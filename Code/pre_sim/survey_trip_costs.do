@@ -12,7 +12,9 @@
                positive costs. 10,000 trips are simulated per domain.
  Inputs:       gulf_atl_2022.dta, prim1.dta, prim2.dta
  Outputs:      trip_costs.dta
- Dependencies: Globals $misc_data_cd, $seed and $inflation_expansion.
+ Dependencies: Globals $misc_data_cd, $input_code_cd, $seed and
+               $inflation_expansion. Programs sf_keep_model_states and
+               sf_label_states from catch_per_trip_programs.do (done below).
                Requires the user-written command renvarlab, and xsvmat for
                extracting the survey estimation table.
  Pipeline:     Step 5 of model_wrapper.do, gated by the `costs_per_trip'
@@ -38,6 +40,11 @@
 set seed $seed
 
 display "survey_trip_costs.do: estimating survey-weighted hurdle cost models by state x mode and simulating 10,000 trip costs per domain. The per-domain svy estimation loops may take several minutes."
+
+/* Load the shared programs used below (sf_keep_model_states,
+   sf_label_states). Each is defined behind a capture program drop guard,
+   so re-running this file in the same session is safe. */
+do "$input_code_cd\catch_per_trip_programs.do"
 
 *Enter a directory with the expenditure survey data 
 u "$misc_data_cd\gulf_atl_2022.dta", clear
@@ -74,17 +81,9 @@ replace brentexp = . if mode == "Shore"
 
 
 *keep only the states we need (MA-NC) 
-keep if inlist(st, 25, 44, 9,  36 , 34, 10, 24, 51, 37)
+sf_keep_model_states
 
-gen state="MA" if st==25
-replace state="MD" if st==24
-replace state="RI" if st==44
-replace state="CT" if st==9
-replace state="NY" if st==36
-replace state="NJ" if st==34
-replace state="DE" if st==10
-replace state="VA" if st==51
-replace state="NC" if st==37
+sf_label_states
 /* These last two are dead: the keep above retains only MA-NC, so no
    observation with st==23 or st==33 survives to be labeled. */
 replace state="ME" if st==23

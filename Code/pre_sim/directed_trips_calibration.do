@@ -27,11 +27,13 @@
                mrip_dtrip_calib_state_mode_wave.dta,
                mrip_dtrip_calib_state_month.dta
  Dependencies: Globals $triplist, $catchlist, $misc_data_cd, $input_data_cd,
-               $ndraws, $seed, $calibration_year, $calibration_start_date,
-               $calibration_end_date, $projection_date_start,
-               $projection_date_end, $fed_holidays, $fed_holidays_y2 and
-               $leap_yr_days. Requires MRIP_lists.do to have run first, since
-               that is the only source of $triplist and $catchlist. Uses the
+               $input_code_cd, $ndraws, $seed, $calibration_year,
+               $calibration_start_date, $calibration_end_date,
+               $projection_date_start, $projection_date_end, $fed_holidays,
+               $fed_holidays_y2 and $leap_yr_days. Requires MRIP_lists.do to
+               have run first, since that is the only source of $triplist and
+               $catchlist. Programs sf_keep_model_states and sf_label_states
+               from catch_per_trip_programs.do (done below). Uses the
                user-written commands dsconcat and gammafit.
  Pipeline:     Step 2 of model_wrapper.do, gated by the toggle estimate_dtrips.
                The longest script in the repo. Its output is the calendar that
@@ -51,6 +53,11 @@
 *******************************************************************************/
 
 display "directed_trips_calibration.do: estimating directed trips from MRIP and drawing $ndraws effort realizations per stratum across 9 states. This is the longest step in the Stata pipeline."
+
+/* Load the shared programs used below (sf_keep_model_states,
+   sf_label_states). Each is defined behind a capture program drop guard,
+   so re-running this file in the same session is safe. */
+do "$input_code_cd\catch_per_trip_programs.do"
 
 
 
@@ -95,17 +102,9 @@ replace prim1_common=subinstr(lower(prim1_common)," ","",.)
 replace prim2_common=subinstr(lower(prim2_common)," ","",.)
 
 * ensure only relevant states 
-keep if inlist(st, 25, 44, 9,  36 , 34, 10, 24, 51, 37)
+sf_keep_model_states
 
-gen state="MA" if st==25
-replace state="MD" if st==24
-replace state="RI" if st==44
-replace state="CT" if st==9
-replace state="NY" if st==36
-replace state="NJ" if st==34
-replace state="DE" if st==10
-replace state="VA" if st==51
-replace state="NC" if st==37
+sf_label_states
 
 tempfile basefile
 save `basefile', replace
@@ -690,17 +689,9 @@ replace prim1_common=subinstr(lower(prim1_common)," ","",.)
 replace prim2_common=subinstr(lower(prim2_common)," ","",.)
 
 * ensure only relevant states 
-keep if inlist(st, 25, 44, 9,  36 , 34, 10, 24, 51, 37)
+sf_keep_model_states
 
-gen state="MA" if st==25
-replace state="MD" if st==24
-replace state="RI" if st==44
-replace state="CT" if st==9
-replace state="NY" if st==36
-replace state="NJ" if st==34
-replace state="DE" if st==10
-replace state="VA" if st==51
-replace state="NC" if st==37
+sf_label_states
 
 
 // classify trips into dom_id=1 (DOMAIN OF INTEREST) and dom_id=2 ('OTHER' DOMAIN)
@@ -832,17 +823,9 @@ replace prim1_common=subinstr(lower(prim1_common)," ","",.)
 replace prim2_common=subinstr(lower(prim2_common)," ","",.)
 
 * ensure only relevant states 
-keep if inlist(st, 25, 44, 9,  36 , 34, 10, 24, 51, 37)
+sf_keep_model_states
 
-gen state="MA" if st==25
-replace state="MD" if st==24
-replace state="RI" if st==44
-replace state="CT" if st==9
-replace state="NY" if st==36
-replace state="NJ" if st==34
-replace state="DE" if st==10
-replace state="VA" if st==51
-replace state="NC" if st==37
+sf_label_states
 
 // classify trips into dom_id=1 (DOMAIN OF INTEREST) and dom_id=2 ('OTHER' DOMAIN)
 gen str1 dom_id="2"
@@ -973,17 +956,9 @@ replace prim1_common=subinstr(lower(prim1_common)," ","",.)
 replace prim2_common=subinstr(lower(prim2_common)," ","",.)
 
 * ensure only relevant states 
-keep if inlist(st, 25, 44, 9,  36 , 34, 10, 24, 51, 37)
+sf_keep_model_states
 
-gen state="MA" if st==25
-replace state="MD" if st==24
-replace state="RI" if st==44
-replace state="CT" if st==9
-replace state="NY" if st==36
-replace state="NJ" if st==34
-replace state="DE" if st==10
-replace state="VA" if st==51
-replace state="NC" if st==37
+sf_label_states
 
 // classify trips into dom_id=1 (DOMAIN OF INTEREST) and dom_id=2 ('OTHER' DOMAIN)
 gen str1 dom_id="2"
@@ -1117,17 +1092,9 @@ replace prim1_common=subinstr(lower(prim1_common)," ","",.)
 replace prim2_common=subinstr(lower(prim2_common)," ","",.)
 
 * ensure only relevant states 
-keep if inlist(st, 25, 44, 9,  36 , 34, 10, 24, 51, 37)
+sf_keep_model_states
 
-gen state="MA" if st==25
-replace state="MD" if st==24
-replace state="RI" if st==44
-replace state="CT" if st==9
-replace state="NY" if st==36
-replace state="NJ" if st==34
-replace state="DE" if st==10
-replace state="VA" if st==51
-replace state="NC" if st==37
+sf_label_states
 
 
 // classify trips into dom_id=1 (DOMAIN OF INTEREST) and dom_id=2 ('OTHER' DOMAIN)
