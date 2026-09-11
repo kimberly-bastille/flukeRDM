@@ -1,3 +1,31 @@
+/*******************************************************************************
+Script:     rdb_processing_NAA.do
+Purpose:    Pulls NAA for the three stocks. Validates and preps them for the 
+			Recreational Dashboard.
+Inputs:     fit_NAA_NORTH_2024.csv
+			fit_NAA_SOUTH_2024.csv
+			fit_proj_NAA_NORTH_2026.csv
+			fit_proj_NAA_SOUTH_2026
+			J1_2024Scup.csv
+			J1_2026Scup.csv
+			J1_2024Summer_Flounder.csv
+			J1_2026Summer_Flounder.csv
+Outputs:   
+			SummerFlounder_projectedNAA
+			SummerFlounder_historicalNAA
+			Scup_projectedNAA
+			Scup_historicalNAA
+			BlackSeaBassSouth_projectedNAA
+			BlackSeaBassSouth_historicalNAA
+			BlackSeaBassNorth_projectedNAA
+			BlackSeaBassNorth_historicalNAA
+Dependencies: Google drive mounted
+ Pipeline:     Step 0 of model_wrapper.do, gated by the toggle
+               prep_NAA_for_dashboard. 
+
+*******************************************************************************/
+
+
 * stock assessment numbers-at-age data
 	* Min-Yang processes the historical numbers-at-age data and makes projections, and stores his output in Google Drive
 	* Here I pull that data from Google Drive (using the Desktop app file path) and save it with a generic name in a local folder 

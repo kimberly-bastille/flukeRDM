@@ -147,7 +147,9 @@ are not modeled individually, the catch and size distributions have these attrib
 
 ### Getting Started
 
-The app opens with three tabs across the top.
+The app opens on a Landing Page with Tabs for a Summary, Regulation selection, and Results.
+
+![Landing Page with Tables for Results, Regulation Selection, and Summaries.](figures/ThreeTabLanding.png)
 
 **Summary Page** is where you look at results. It shows every model run that has been completed, both 
 coastwide and state by state.
@@ -165,12 +167,6 @@ Two things to know before you start.
 regulations and puts your run in a queue. The model runs elsewhere and takes a substantial amount of 
 time — each state is a separate job. Your results appear on the summary page once it finishes, which
  means you submit, go do something else, and come back later.
-
-![Summary page showing Median change in harvest for all states and a summary table showing median percent change.](images/SummaryPage.png)
-
-![Regulation selection tab where users select regulation scenarios.](images/RegulationSelection.png)
-
-![Results tab that calculates summed results based on the regulations selected for each state.](images/Results.png)
 
 
 ### Building a Scenario: the Regulation Selection Tab
@@ -196,7 +192,7 @@ color. Unselect a state and its panel disappears.
 
 Selecting more states means a longer wait for results, since each state is modeled separately.
 
-![Regulation selection tab with Policy name is AB1 and Deleware, Maryland, and Virginia are selected.](images/RegulationSelectionNamed.png)
+![Regulation selection tab with Policy name is AB1 and Delaware, Maryland, and Virginia are selected. MD is only partially show in this screen capture and VA is not shown.](figures/RegulationSelectionTabAB1.png)
 
 
 #### Step 3: Set the regulations
@@ -215,7 +211,7 @@ this section lists those differences.
 and **Shore**. Each gets its own season dates, bag limit, and minimum size.
 
 **Setting a season.** A season is a calendar dropdown with two handles one for the opening day 
-and one for closing day. All dates inbetween these two dates will be assumed open. Unlike the fishing-year species 
+and one for closing day. All dates between these two dates are open. Unlike the fishing-year species 
 elsewhere in the region, these seasons run on the calendar year.
 
 **Setting a bag limit.** Type a number into the Bag Limit box — the number of fish kept per angler per day.
@@ -223,7 +219,7 @@ elsewhere in the region, these seasons run on the calendar year.
 **Setting a minimum size.** Drag the Min Length slider. It moves in **half-inch steps**,
 so 17.5 inches is available as well as 17 and 18.
 
-![MA summer flounder regulations sliders and buttons.](images/SlidersMA.png)
+![MA summer flounder regulations sliders and buttons.  Anglers can retain up to 5 Summer Flounder, greater than or equal to 17.5 inches, starting on May 24, 2027 and ending on September 23, 2027.](figures/MASummerFlounderSliders.png)
 
 
 **Summer flounder in Massachusetts.** Three blocks appear, one per mode, each with 
@@ -257,7 +253,7 @@ does not commit you to using it.
 Each state and species has a maximum number of seasons, listed in the table below.
 Once you have used them, the Add Season button has nothing further to reveal.
 
-![MA summer flounder regulations sliders and buttons where add season has been selected so season 2 options display.](images/MAaddseason.png)
+![MA summer flounder regulations sliders and buttons where add season has been selected so season 2 options display. Screenshot truncated for brevity.](figures/MASummerFlounderExtraSeason.png)
 
 #### How seasons and closures are handled
 
@@ -315,7 +311,7 @@ you can look at a single state in detail.
 **Everything on this page is measured against the status quo run.** The tool compares
 each of your scenarios against a baseline run named "SQ." 
 
-![Summary page showing Median change in harvest for all states and a summary table showing median percent change.](images/SummaryPage.png)
+![Summary page showing Median change in harvest for all states and a summary table showing median percent change.](figures/SummaryGraphsTable.png)
 
 The Results tab has a panel on the left with all states. To explore the results, select a policy for each state or group of states you
 would like to see results for. Once selected, click the Calculate button. This button provides the outputs summed across states with policies selected.
@@ -326,7 +322,7 @@ that model hasn't completed. Come back to it at a later time and the Policy shou
 The results show median harvest weight in pounds and the percent change from the status quo, angler satisfaction, predicted trips,
 median discard weight and median dead discard weight in pounds as well as a table of the regulations for the selected policies.
 
-![Results tab that calculates summed results based on the regulations selected for each state.](images/Results.png)
+![The Results tab combines policy "JB5" in MA, "JB5" in RI, and "SQ" in CT. All metrics presented are just for these three states.  Screenshot has been truncated for brevity.](figures/ResultsTab.png)
 
 ---
 

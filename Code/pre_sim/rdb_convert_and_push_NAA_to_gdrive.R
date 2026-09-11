@@ -1,4 +1,27 @@
-#This code reads in a catch per trip dta for the rec dashboard and uploads it to Google drive as an Rds
+################################################################################
+################################################################################
+# Script:       rdb_convert_and_push_NAA_to_gdrive.R
+# Purpose:      This code reads in a catch per trip dta for the rec dashboard
+#               and uploads it to Google drive as an Rds
+# Inputs:       SummerFlounder_projectedNAA
+#                SummerFlounder_historicalNAA
+#                Scup_projectedNAA
+#                Scup_historicalNAA
+#                BlackSeaBassSouth_projectedNAA
+#                BlackSeaBassSouth_historicalNAA
+#                BlackSeaBassNorth_projectedNAA
+#                BlackSeaBassNorth_historicalNAA
+#                 projected_catch_at_length.csv.
+# Outputs:      None written here; run_cod_hadd_projection() returns a long
+#               data.table of projected metrics by season/mode/metric/iteration.
+# Dependencies: rdb_processing_NAA.do. should be run first.
+#
+# Pipeline:     rdb push phase. called by model_wrapper.do Run after rdb_processing_NAA.do. 
+#                Gated by push_NAA_to_gdrive.
+################################################################################
+################################################################################
+
+
 
 
 # Define arguments
