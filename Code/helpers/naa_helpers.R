@@ -1,9 +1,15 @@
-########################################################
-########################################################
-# Some helper functions that are used by both by Rdb_convert_and_push_NAA_to_gdrive
-# borrowed from the groundfishRDM repo
+################################################################################
+################################################################################
+# Script:       naa_helpers.R
+# Purpose:      Function library used Rdb_convert_and_push_NAA_to_gdrive 
+# Inputs:       none hard coded
+# Outputs:      None written here
+# Dependencies: N/A
+# Pipeline:     Functions used by Rdb_convert_and_push_NAA_to_gdrive.
+################################################################################
 
-########################################################
+
+
 #
 # From the dashboard repo, this wrestles the wide NAA data into long format.
 #
