@@ -60,12 +60,6 @@
                                 calibration_catch_per_trip_part2.do, which
                                 this toggle does not control.)
 
- PROTOTYPE MODE IS ON BY DEFAULT. When `proto' = 1, the global set in the
- proto block (after EXECUTION CONTROL) replaces the $ndraws set under
- "Number of model iterations". As committed, both set the same value, so
- proto currently changes nothing. Lower the value in the proto block for a
- quick test run. GroundfishRDM defaults the same toggle to 0. The copula R
- scripts keep their own draw count: see the note at the proto block.
 *******************************************************************************/
 
 /**** SFSBSB RDM code wrapper ****/
@@ -119,12 +113,27 @@ set varabbrev on
 
 **Adjust globals**
 
+global mrip_cal_type "cal_2018"
+
 * These need to be changed every year 
 
-* year-waves of MRIP data. 
-global yr_wvs 20221 20222 20223 20224 20225 20226 20231 20232 20233 20234 20235 20236  20241 20242 20243 20244 20245  20246 20251 20252 20253 20254 20255 20256
-global yearlist 2022 2023 2024 2025
+/* First and last year of MRIP data.*/
+/* used by:
+tidyup_mrip_data_fromR.do*/
+
+global first_mrip_year 2022
+global last_mrip_year 2025
+numlist "$first_mrip_year/$last_mrip_year"
+
+global yearlist  `r(numlist)'
 global wavelist 1 2 3 4 5 6
+
+
+* year-waves of MRIP data. 
+global yr_wvs 20221 20222 20223 20224 20225 20226  ///
+			  20231 20232 20233 20234 20235 20236  ///
+			  20241 20242 20243 20244 20245 20246  ///
+			  20251 20252 20253 20254 20255 20256
 
 global calibration_year "(year==2024 & inlist(wave, 1, 2, 3, 4, 5, 6))"
 global calibration_year_num 2024
@@ -166,7 +175,7 @@ global fed_holidays_y2 "inlist(day_y2, td(01jan2026), td(19jan2026), td(16feb202
 global leap_yr_days "td(29feb2024)" 
 
 * Number of model iterations
-global ndraws 20
+global ndraws 150
 
 * set years of which to pull the NEFSC trawl survey data
 global NEFSC_svy_yrs "inlist(year,2024, 2023, 2022)"
@@ -213,9 +222,9 @@ global seed 03211990
 
 // Control which modules to run (set to 0 to skip)
 loc pull_assessment = 0		 		// Pull Assessment data
-loc processMRIP = 1		 			// deal with casing MRIP data
-loc assemblemriplists = 1		 	// deal with casing MRIP data
-
+loc pull_MRIP= 1			 		// Pull MRIP data
+loc processMRIP = 0		 			// deal with casing MRIP data
+loc assemblemriplists = 0		 	// deal with casing MRIP data
 loc estimate_dtrips = 1				// Estimate Directed Trips 
 loc costs_per_trip = 0			// Create Distributions of costs per trip (run 1x)
 loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
@@ -238,20 +247,15 @@ loc catch_at_length_project=1		// Generate projection-year catch-at-length
    separately. */
 loc catch_per_trip_project=1       // Generate projection-year catch-per trip
 
-loc prep_NAA_for_dashboard = 0		// Pull Assessment data
-loc push_NAA_to_gdrive =0 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
+loc prep_NAA_for_dashboard = 1		// Pull Assessment data
+loc push_NAA_to_gdrive =1 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
+loc run_calibration =0 				// Run calibration /sim/R wrapper.R  Will Not run until the hardcoded paths are fixed.
 
 
-/* Prototype mode. ON as committed - see the header. When on, the global below
-   replaces the $ndraws set under "Number of model iterations" above. As
-   committed both set the same value, so proto currently changes nothing. A
-   smaller value here makes a full pass finish in a fraction of the time, but
-   the results are too noisy to use.
-   The copula R scripts do not read $ndraws. copula_modeling_calibration.R and
-   copula_modeling_projection.R each set n_draws in their controls block, and
-   each must be at least $ndraws: the part2 scripts read draw files
-   1..$ndraws and fail at the first one missing. "R code wrapper.R" sets its
-   own n_simulations. Changing proto here keeps none of these in step. */
+/* Prototype mode will overrides
+   the $ndraws =150 to ndraws=3, which makes a full pass through the
+   pipeline finish in a fraction of the time  
+   */
 // Prototyping
 local proto = 1
 
@@ -283,10 +287,30 @@ if `push_NAA_to_gdrive' {
 
 	}
 
+// 0) Pull MRIP data from Oracle (takes a while).
+
+/* Paths to the tidied MRIP extracts (written by tidyup_mrip_data_fromR.do). */
+	global catchlist "$misc_data_cd/mrip_catch.dta"	
+	global triplist  "$misc_data_cd/mrip_trip.dta"
+	global b2list  "$misc_data_cd/mrip_size_b2.dta"
+	global sizelist  "$misc_data_cd/mrip_size.dta"
+
+	
+	if `pull_MRIP' {
+  	di "Pulling MRIP data from oracle"
+		rscript using "$input_code_cd\get_mrip_oracle.R", args($mrip_cal_type $first_mrip_year $last_mrip_year)
+    di "Oracle Data Pull Finished"
+
+  	di "Tidying up MRIP data"
+  	do "$input_code_cd\tidyup_mrip_data_fromR.do"
+  	di "Tidyup finished"
+
+}
+
 	
 	
 
-// 1) Pull the MRIP data
+// 1) Process MRIP data
 
 if `processMRIP' {
 	di "Processing MRIP data"
@@ -309,6 +333,10 @@ assert `"${triplist}"'!=""
 		// THIS NEEDS TO BE ADJUSTED EVERY YEAR. 
 
 if `estimate_dtrips' {
+  di "Compiling Aggregate Effort"
+		rscript using "$input_code_cd\get_mrip_trips.R"
+
+	di "Estimating Directed trips"
 
 	di "Estimating Directed trips"
     do "$input_code_cd\directed_trips_calibration.do"
@@ -405,19 +433,19 @@ if `catch_per_trip_project'{
 		do "$input_code_cd\compare_projection_data_to_MRIP.do"
 }
 
-// 10) Run the projection loop in R
-
-/* Step 10 is a heading with no code beneath it. This is the wrapper-chaining
-   gap: GroundfishRDM's Stata wrapper calls its R wrapper here as a final
-   gated step, so the two halves cannot be run out of order. flukeRDM's
-   equivalent call was never written, which is why the pipeline has three
-   independent entry points that an operator must sequence by hand:
-       1. this file
-       2. Rscript "Code/sim/R code wrapper.R"
-       3. Rscript Run_Model.R <Run_Name>   (currently broken - see its header)
-   Closing this gap is in scope for the next flukeRDM development pass. */
-
 display "model_wrapper.do: Stata pre-simulation stage complete. NEXT STEP IS MANUAL - run Code/sim/'R code wrapper.R' to perform the R calibration; this wrapper does not call it."
+// 10) Run the calibration routine in R, export files to Google Drive
+
+/* need to fix hardcoded paths*/
+
+if `run_calibration'{
+		di "Running calibration routine in R"
+	cd $here
+
+		rscript using "$here\Code\sim\R code wrapper.R", args($ndraws)
+    	di "Simulation model calibrated and files exported to Google Drive"
+}
+
 
 
 if (`proto'==1) {
