@@ -135,21 +135,17 @@ in its own top-level assignments (`input_data_cd`, `iterative_input_data_cd`, li
 wrapper will run. This differs from groundfishRDM, where comparable hard-coded paths are
 confined to standalone test scripts.
 
-### The three entry points are not chained
+### The two entry points are not chained
 
-This is the key structural difference from groundfishRDM, where the Stata wrapper's final
-step invokes the R wrapper directly. flukeRDM has **three independent entry points with no
-code-level connection between any of them**. A person must run all three, in the right
-order, by hand:
+flukeRDM has **two independent entry points with no code-level connection between any of them**. A person must run both in this order:
 
 ```
 1.  do Code/pre_sim/model_wrapper.do        # Stage 1 — Stata
-2.  Rscript "Code/sim/R code wrapper.R"     # Stage 2 — R calibration
-3.  Rscript Run_Model.R <Run_Name>          # Stage 3 — projection  [BROKEN, see below]
+2.  Rscript Run_Model.R <Run_Name>          # Stage 3 — projection  [BROKEN, see below]
 ```
 
 Every hand-off between stages is filesystem-only. Nothing verifies that Stage 1 finished
-before Stage 2 starts, or that either ran before Stage 3.
+before Stage 2 starts
 
 ### Stage 1: `Code/pre_sim/model_wrapper.do`
 
@@ -158,8 +154,8 @@ before Stage 2 starts, or that either ran before Stage 3.
  0.   pull_assessment           get_assessment_from_gdrive.do
       prep_NAA_for_dashboard    rdb_processing_NAA.do
       push_NAA_to_gdrive        rdb_convert_and_push_NAA_to_gdrive.R
- 1a.  processMRIP               MRIP_column_cases.do
- 1b.  assemblemriplists         MRIP_lists.do
+ 1a.  processMRIP               MRIP_column_cases.do (retirement in process)
+ 1b.  assemblemriplists         MRIP_lists.do (retirement in process)
  2.   estimate_dtrips           directed_trips_calibration.do
                                 └─ set_regulations.do               (nested, unconditional)
  3.   costs_per_trip            survey_trip_costs.do
@@ -175,7 +171,8 @@ before Stage 2 starts, or that either ran before Stage 3.
       9b.                       ├─ copula_modeling_projection.R
       9c.                       ├─ catch_per_trip_projection_part2.do
       9d.                       └─ compare_projection_data_to_MRIP.do
-10.   (none)                    heading only, no code — see Known Issues
+10.  run_calibration                  run the calibration
+
 ```
 
 The four catch-per-trip scripts (5a, 5c, 9a, 9c) share their repeated blocks through
@@ -196,10 +193,6 @@ from groundfishRDM's one-toggle-per-script pattern:
   `Code/pre_sim/` but is never called), and `angler_demogs` (1/ON, no explanatory comment
   at all — groundfishRDM has a fully wired toggle of the same name). Setting any of them
   has no effect.
-- `assemblemriplists` gates the **only** definition point for `$catchlist`, `$triplist`,
-  `$b2list` and `$sizelist`. Unlike groundfishRDM, the wrapper provides no fallback
-  default. It currently defaults ON, so the risk is latent — but turning it off leaves
-  several later steps reading undefined globals.
 
 `set_regulations.do` requires **manual editing every year** to enter status-quo
 regulations. It is reached only through `estimate_dtrips`.
@@ -243,6 +236,8 @@ references it.
 
 ### Stage 3: `Run_Model.R` — known broken as committed
 
+We're in the middle of a rename/refactor. The developer team is in the process of fixing these issues.
+
 ```
 Rscript Run_Model.R <Run_Name>
 ```
@@ -260,12 +255,10 @@ source(here::here("Code/sim/predict_rec_catch_functions.R"))   # only exists in 
 source(here::here("Code/sim/predict_rec_catch.R"))             # exists nowhere; closest is
                                                                # Code/sim/predict_rec_catch_final.R
 ```
-The developer team is in the process of fixing these issues.
 
 A run fails on the first draw of the first state attempted. This is consistent with a
 rename inside `Code/sim/` that did not update its callers, and the contents of
-`Code/archive/` support that reading. **The developers are aware; a fix may exist on an
-unpushed branch.**
+`Code/archive/` support that reading. **The developers are aware.**
 
 `Code/sim/run_state_model.R` carries the same two broken `source()` calls plus a third
 defect of its own — it calls `apply_directed_trips_regs()`, which is never sourced
@@ -378,12 +371,9 @@ release numbers, percent difference from status quo, percent under harvest targe
   raised without re-running the copula step, part2 fails partway through.
 
 **Pipeline structure**
-- Three entry points, zero code-level links between them. Stage ordering exists only in a
-  maintainer's head.
+- two entry points, zero code-level links between them. 
 - Three toggles are defined but gate nothing; one (`angler_demogs`) has no explanatory
   comment at all.
-- `assemblemriplists` is the only definition point for four widely-read globals, with no
-  fallback default.
 - `$developer` is required 
 
 **Portability**

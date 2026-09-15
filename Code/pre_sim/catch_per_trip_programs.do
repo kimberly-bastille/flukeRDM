@@ -254,16 +254,10 @@ program define sf_prep_mrip_trip_catch ;
        calibration part2's FES pool */
     sf_label_states ;
 
-    gen mode1="sh" if inlist(mode_fx, "1", "2", "3") ;
-    replace mode1="pr" if inlist(mode_fx, "7") ;
-    replace mode1="fh" if inlist(mode_fx, "4", "5") ;
-
     /* classify trips into the domain we care about (caught or targeted
-       fluke, sea bass or scup) and everything else, marked "ZZ".
-       PRESERVED: prim2_common is assigned from prim1_common, as in the
-       original. prim2_common is not used downstream. */
+       fluke, sea bass or scup) and everything else, marked "ZZ". */
     replace prim1_common=subinstr(lower(prim1_common)," ","",.) ;
-    replace prim2_common=subinstr(lower(prim1_common)," ","",.) ;
+    replace prim2_common=subinstr(lower(prim2_common)," ","",.) ;
 
     /* We need to retain 1 observation for each strat_id, psu_id, and id_code
        A.  Trip targeted or caught fluke, sea bass or scup -> domain "SF"

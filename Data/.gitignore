@@ -3,3 +3,4 @@
 *.xlsx
 *.rds
 *.dta
+/2028_mgt_cycle/*

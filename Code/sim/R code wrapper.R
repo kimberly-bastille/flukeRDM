@@ -24,24 +24,16 @@
 #               .dta and .csv files converted below are its output. Sources
 #               calibrate_rec_catch0_optimized.R, calibration_routine_final.R
 #               (which itself sources calibrate_rec_catch1_final.R) and
-#               predict_rec_catch_final.R. Does NOT source
-#               Code/helpers/developer_setup.R - paths are set literally
-#               below instead.
-# Pipeline:     Entry point 2 of 3. NOTHING CALLS THIS SCRIPT. Unlike
-#               GroundfishRDM, whose Stata wrapper invokes its R wrapper as a
-#               final gated step, flukeRDM's model_wrapper.do never calls this
-#               file. The operator must know to run model_wrapper.do first and
-#               then this, by hand, in that order. Downstream, Run_Model.R is
-#               a third independent entry point.
+#               predict_rec_catch_final.R. 
+#                 - n_simulations is picked up from Stata's ndraws global
+#               Sources Code/helpers/developer_setup.R - but does not yet take advantage of it
+# Pipeline:     Called by model_wrapper.do in the final step, 
+#               Downstream, Run_Model.R is a second independent entry point.
 # Dev paths:    12 hardcoded absolute paths to a developer's local machine
 #               (C:\ or E:\), at lines 129-130, 211-212, 215-216, 297, 301,
 #               335 and 339; plus 2 more in commented-out lines (150, 170).
 #
-# Configuration mismatches to be aware of (documented, not changed):
-#   - n_simulations is 10 here. The comment above it describes the intended
-#     125-draw calibration / 100-draw production design, and Stata's $ndraws
-#     is 100 (or 3 when proto=1). None of these are linked programmatically;
-#     changing one does not change the others.
+# Configuration mismatches to be aware of:
 #   - n_draws (50) is assigned and never used in this file.
 #   - input_data_cd and iterative_input_data_cd are absolute paths on two
 #     different developers' machines. Several loops below then ignore
@@ -128,6 +120,11 @@ parse_date_any <- function(x) {
 
 
 #Set up R globals for input/output data and code scripts
+here::i_am("Code/sim/R code wrapper.R")
+source(here("Code", "helpers", "developer_setup.R"))
+source(here("Code","helpers","naa_helpers.R"))
+
+
 code_cd=here("Code", "sim")
 input_data_cd="C:/Users/andrew.carr-harris/Desktop/MRIP_data_2025"
 iterative_input_data_cd="E:/Lou_projects/flukeRDM/flukeRDM_iterative_data"
@@ -153,11 +150,22 @@ iterative_input_data_cd="E:/Lou_projects/flukeRDM/flukeRDM_iterative_data"
 #options("RStata.StataPath" = "\"C:\\Program Files\\Stata17\\StataMP-64\"")
 #options("RStata.StataVersion" = 17)
 
-# The comment below describes the intended design (125 calibration draws, 100
-# used); the value actually set is 10, i.e. this file is currently configured
-# for a test run, not production. Nothing links this to Stata's $ndraws.
-#Set number of original draws. We create 125 (in case some don't converge in the calibration), but only use 100 for the final run. Choose a lot fewer for test runs
-n_simulations<-10
+#Read in number of original draws.
+
+# Number of model iterations. Match Stata's $ndraws
+# (model_wrapper.do) using the argument in Stata call
+# Define arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 1) {
+  stop("Error: This script requires exactly one argument.", call. = FALSE)
+}
+n_simulations  <- as.numeric(args[1]) # Number of model iterations.
+
+# Show them, just in case.
+cat("Number of model iterations selected:", n_simulations, "\n")
+
+
+
 
 # n_draws is not referenced anywhere in this file or the scripts it sources.
 n_draws<-50 #Number of simulated trips per day

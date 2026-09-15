@@ -167,8 +167,8 @@ local regions "MA RI CT NY NJ DE MD VA NC" ;
 set more off ;
 set rmsg off ;
 
-foreach s of local regions {;
-
+quietly foreach s of local regions {;
+     noisily display "Working on calibration catch draws for region `s' " ;
     /* this state's calendar of days with directed trips, all draws */
     tempfile base ;
     sf_load_directed_trips, state(`s') saveas(`base') ;
@@ -341,6 +341,7 @@ foreach s of local regions {;
         compress ;
 
         save "$calib_catch_data_cd\calib_catch_draws_`s'_`i'.dta", replace ;
+		noisily display "calib_catch_draws_`s'_`i'.dta saved" ;
     };
 };
 
