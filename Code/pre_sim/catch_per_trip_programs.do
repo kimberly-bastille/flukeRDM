@@ -52,10 +52,10 @@
                history, before the retirement commit. The extraction was
                validated by exact-match comparison of every output file, old
                against new. Two things follow, and both matter when editing:
-               (1) Behaviour marked PRESERVED looks like a mistake and is kept
+               (1) Any Behaviour marked PRESERVED looks like a mistake and is kept
                on purpose - an always-true condition, a variable assigned and
                never read, an unreachable guard. Read the note at each site
-               before changing it.
+               before changing it. 
                (2) The part2 programs keep every sort, merge, duplicates drop
                and egen group of the original, including ones whose result is
                never used, because each consumes the sort RNG and the tie
@@ -115,14 +115,16 @@ end ;
 /******************************************************************************
  sf_label_states
  Creates the string variable state from the numeric MRIP/FES state code st,
- for the nine states the model covers (MA MD RI CT NY NJ DE VA NC), in the
- order the original scripts wrote the assignments. Rows with any other st
- get state == "" ; the caller decides whether to drop them.
+ for the nine states the model covers (MA MD RI CT NY NJ DE VA NC), 
+ 
+ Rows with any other st get state == "" ; the caller decides whether to drop them.
+ 
  This nine-line block was repeated in every part1 MRIP prep block (now
  sf_prep_mrip_trip_catch), in the FES demographic pool of calibration part2,
  and in directed_trips_calibration.do, calibration_catch_at_length.do and
- survey_trip_costs.do. No groundfishRDM program (groundfish kept its copy
- inline). The same nine st codes are listed in sf_keep_model_states below:
+ survey_trip_costs.do. 
+ 
+ The same nine st codes are listed in sf_keep_model_states below:
  change the two together.
  Parameters: none. Acts on the data in memory; requires variable st.
 ******************************************************************************/
@@ -145,13 +147,7 @@ end ;
  states the model covers (MA RI CT NY NJ DE MD VA NC) and drops all others.
  The same nine codes are labeled by sf_label_states just above: change the
  two together.
- This one-line filter was repeated just before most sf_label_states sites:
- in sf_prep_mrip_trip_catch, directed_trips_calibration.do,
- calibration_catch_at_length.do and survey_trip_costs.do. The codes are
- written here exactly as most copies wrote them.
- calibration_catch_at_length.do listed the same nine codes in another
- order, which does not matter: inlist() only tests membership.
- No groundfishRDM program.
+ Yes, this is a small and somewhat silly program.
  Parameters: none. Acts on the data in memory. Requires numeric variable st.
 ******************************************************************************/
 capture program drop sf_keep_model_states ;
@@ -162,14 +158,19 @@ end ;
 /******************************************************************************
  sf_prep_mrip_trip_catch
  Reads the MRIP trip and catch extracts named by $triplist and $catchlist,
- merges catch onto trips, keeps the nine mid-Atlantic states and the
- requested year window, classifies mode and species domain (SF = trip caught
+ 
+ merges catch onto trips, 
+ keeps the nine mid-Atlantic states and the requested year window,
+ classifies mode and species domain (SF = trip caught
  or targeted summer flounder, black sea bass or scup; ZZ = everything else,
- including North Carolina trips outside the northern counties), builds
- per-trip keep/release/catch totals for the three species, collapses to one
- row per trip, svysets, and saves the my_dom_id <-> my_dom_id_string map to
+ including North Carolina trips outside the northern counties), 
+ 
+ builds per-trip keep/release/catch totals for the three species, 
+ 
+ svysets, and saves the my_dom_id <-> my_dom_id_string map to
  a caller-owned tempfile (and optionally the trip-level data itself).
- This is the block the original scripts repeated five times: Part A of both
+ 
+ This was repeated 5 times in the orginal: Part A of both
  calibration and projection part1, and each of the three Part B sub-blocks
  of calibration part1.
 
@@ -516,11 +517,14 @@ end ;
 /******************************************************************************
  sf_impute_pse_round
  One round of the standard-error imputation for strata that had a single
- PSU (and therefore a mean but no SE). For every stratum still missing an
+ PSU (and therefore a mean but no SE). 
+ 
+ For every stratum still missing an
  SE, it pools the stratum's own wave with its shoulder wave(s) from the
  trip-level data, re-estimates the outcome's mean and SE on that pooled
- sample, and records the proportional SE (pse_impute = se/mean). Per-stratum
- results are saved to tempfiles whose names accumulate in a global, and
+ sample, and records the proportional SE (pse_impute = se/mean). 
+ 
+ Per-stratum  results are saved to tempfiles whose names accumulate in a global, and
  dsconcat'd into memory at the end.
  The original scripts had this loop twice (round 1 with one shoulder wave,
  round 2 with two) in each of calibration and projection part1.
