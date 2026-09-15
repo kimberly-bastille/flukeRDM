@@ -40,17 +40,9 @@
 #
 # CONTROLS AT THE TOP OF THE FILE, and one important consequence:
 #   n_sim   = 5000   simulated trips drawn per stratum
-#   n_draws = 3      SIMULATION DRAWS WRITTEN - see below
 #   n_reps  = 200    replicate weights used for the survey variance estimates
 #
-# n_draws IS HARDCODED TO 3 AND DOES NOT READ $ndraws. This is the constraint
-# that ties the whole Stata pipeline to prototype mode. model_wrapper.do sets
-# $ndraws to 100 and then, because proto defaults to 1, overwrites it with 3.
-# If someone sets proto = 0 for a "real" run, the downstream Stata scripts will
-# loop over draws 1..100 looking for files this script only wrote three of, and
-# fail at draw 4. Running at full size therefore requires changing n_draws here
-# and in copula_modeling_projection.R as well as setting proto = 0. Flagged,
-# deliberately not changed.
+# n_draws reads $ndraws. 
 #
 # INVOKED FROM STATA via `rscript using', not sourced by the R wrapper. The
 # wrapper comment warns that this step "takes a while and will look like it's
@@ -59,6 +51,14 @@
 # while running.
 ################################################################################
 ################################################################################
+# Define arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 1) {
+  stop("Error: This script requires exactly three arguments.", call. = FALSE)
+}
+
+#read in arguments. Ensure they are numeric
+n_draws  <- as.numeric(sub("cal_","",args[1]))
 
 
 # ---- packages ----
@@ -105,7 +105,6 @@ misc_data_dir<-file.path(sf.data.dir, "miscellaneous")
 
 # ---- controls ----
 n_sim   <- 5000
-n_draws <- 20
 n_reps  <- 200
 
 statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")

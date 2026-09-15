@@ -353,7 +353,9 @@ program define sf_post_svy_by_domain ;
     postfile handle str15 varname str15 domain float `stat' se `civars' using `results', replace ;
 
     /* Loop over variables */
-    foreach var of local vars {;
+    quietly foreach var of local vars {;
+
+	noisily display "running sf_post_svy_by_domain on variable `var'" ;
 
         /* Run svy for the variable by domain */
         svy: `stat' `var', over(`over') ;
@@ -376,7 +378,9 @@ program define sf_post_svy_by_domain ;
                 post handle ("`var'") ("`domlabel'") (`m') (`se') (`lb') (`ub') ;
             };
         };
-    };
+    	noisily display "sf_post_svy_by_domain on variable `var' finished" ;
+
+	};
 
     postclose handle ;
 
@@ -516,8 +520,9 @@ program define sf_impute_pse_round ;
              ACCUMGLOBAL(string) [ STRATZ(string) ] ;
 
     global `accumglobal' ;
-    foreach s of local stratz {;
-        u "`missingfile'", clear ;
+    quietly foreach s of local stratz {;
+        noisily display "runing sf_impute_pse_round on state `s'" ;
+		u "`missingfile'", clear ;
         keep if strata_id==`s' ;
 
         levelsof state, local(st) clean ;
@@ -651,6 +656,7 @@ program define sf_build_cpt_strata ;
     save `missing_se', replace ;
 
     /* Round 1 */
+
     sf_impute_pse_round, missingfile(`missing_se') basefile(`basefile')
         shoulders(shoulder_wave) accumglobal(impute) stratz(`stratz') ;
 
