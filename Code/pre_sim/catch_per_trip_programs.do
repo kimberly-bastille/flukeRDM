@@ -1,18 +1,23 @@
 /*******************************************************************************
  Script:       catch_per_trip_programs.do
  Purpose:      Stata programs shared by the catch-per-trip scripts
-               (catch_per_trip_calibration_part1.do,
-               catch_per_trip_projection_part1.do,
-               calibration_catch_per_trip_part2.do and
-               catch_per_trip_projection_part2.do). Each program
-               is one block that the pre-refactor scripts repeated verbatim,
-               or with one or two parameters changed. Nothing here runs on
-               its own: the file only DEFINES programs. Each caller does this
+					catch_per_trip_calibration_part1.do,
+					catch_per_trip_projection_part1.do,
+					calibration_catch_per_trip_part2.do,
+					catch_per_trip_projection_part2.do). 
+			   Each program is one block that the first generation scripts repeated verbatim,
+               or with one or two parameters changed. 
+			   
+   			   Three scripts execute this file for the two state programs
+               sf_label_states and sf_keep_model_states:
+			   
+					directed_trips_calibration.do
+					calibration_catch_at_length.do
+					survey_trip_costs.do.
+
+			   This file only DEFINES programs. Each caller execytes does this
                file at its top, behind capture program drop guards.
-               Three more scripts do this file for the two state programs
-               only (sf_label_states and sf_keep_model_states):
-               directed_trips_calibration.do, calibration_catch_at_length.do
-               and survey_trip_costs.do.
+               
 
                Programs, in the order defined:
                  make_domain_expr         build the +"_"+ join expression
@@ -44,14 +49,17 @@
                program to the other by accident. Programs whose body is
                identical to the groundfish one keep the groundfish name
                (make_domain_expr, decode_svy_domains, split_domain_string).
-               Programs with no groundfish counterpart are prefixed too.
+			   
+               Programs with no groundfish counterpart are prefixed.
 
  History:      These programs were extracted from four catch-per-trip scripts
                that had each repeated the same blocks. "The original" in the
                notes below means those pre-refactor scripts; they are in git
-               history, before the retirement commit. The extraction was
+               history, before the retirement commit (see PRs 179 and 180). The extraction was
                validated by exact-match comparison of every output file, old
-               against new. Two things follow, and both matter when editing:
+               against new. 
+			   
+			   Two things follow, and both matter when editing:		   
                (1) Any Behaviour marked PRESERVED **could** be a bug but was left 
                on purpose. Read the note at each site
                before changing it. 
@@ -59,7 +67,9 @@
                and egen group of the original, including ones whose result is
                never used, because each consumes the sort RNG and the tie
                order of later sorts depends on it. Deleting an apparently dead
-               sort here changes the sampled output.
+               sort here changes the sampled output.  Now that we've verified that 
+			   the refactor worked, some of those bits could be taken out.
+			   
                sf_keep_model_states, and the state-program calls from the
                three non-catch-per-trip scripts named under Purpose, came
                later. That change was checked by expanding each call back
@@ -88,10 +98,11 @@
  Builds the Stata string expression that joins a list of variables with "_",
  e.g. vars(state wv2 mode1 common_dom) returns
    r(expr) = state+"_"+wv2+"_"+mode1+"_"+common_dom
- which is exactly the expression text the original file used, so the values
- produced are identical.
  Identical to the groundfishRDM program of the same name.
- Parameters:
+
+ USAGE: make_domain_expr, vars(state wv2 mode1 common_dom) ;
+
+  Parameters:
    vars : whitespace-separated list of string variables, in the order joined
 ******************************************************************************/
 capture program drop make_domain_expr ;
@@ -118,10 +129,7 @@ end ;
  
  Rows with any other st get state == "" ; the caller decides whether to drop them.
  
- This nine-line block was repeated in every part1 MRIP prep block (now
- sf_prep_mrip_trip_catch), in the FES demographic pool of calibration part2,
- and in directed_trips_calibration.do, calibration_catch_at_length.do and
- survey_trip_costs.do. 
+ Usage: sf_label_states
  
  The same nine st codes are listed in sf_keep_model_states below:
  change the two together.
@@ -147,6 +155,7 @@ end ;
  The same nine codes are labeled by sf_label_states just above: change the
  two together.
  Yes, this is a small and somewhat silly program.
+ Usage: sf_keep_model_states
  Parameters: none. Acts on the data in memory. Requires numeric variable st.
 ******************************************************************************/
 capture program drop sf_keep_model_states ;
@@ -173,12 +182,15 @@ end ;
  calibration and projection part1, and each of the three Part B sub-blocks
  of calibration part1.
 
- Derives from groundfishRDM prep_mrip_trip_catch. Differences: three
- species instead of two; nine states instead of three; the North Carolina
- county filter; no site-list import and no stock-area variable; no shore-mode
- drop; the year window is a parameter (yearglobal) because fluke has a
- calibration window and a projection window; basefile is optional because
- Part B never reads it.
+ Similar to groundfishRDM prep_mrip_trip_catch. Differences: 
+	three species;
+	nine states instead of three; 
+	the North Carolina county filter instead of the site-list import 
+	no stock-areas; 
+	no shore-mode drop; 
+	the year window is a parameter (yearglobal) because fluke has a
+ calibration window and a projection window; 
+ basefile is optional because Part B never reads it.
 
  Parameters:
    domvars     : variables joined with "_" to form my_dom_id_string, in
@@ -198,7 +210,12 @@ end ;
                  given, receives the trip-level svyset data. Part A passes
                  it; Part B does not, and then issues no save at all, exactly
                  as the original Part B blocks did not.
+Usage: 
 
+sf_prep_mrip_trip_catch, domvars(state mode1 common_dom)
+    yearglobal(calibration_year) domainsfile(`domains') ;
+
+				 
  Note on the B.3 wave string (output-identical to the original): this
  program always creates wv2 after the North Carolina filter, for every
  domain including B.3. The original B.3 block alone created its wave string
@@ -355,9 +372,9 @@ end ;
  results are the dataset in memory (varname, domain, <stat>, se, <civars>).
  Requires the data to be svyset with the over() variable present.
 
- Derives from groundfishRDM post_svy_by_domain. Differences: over() is a
- parameter because calibration Part B runs over my_dom_id2; civars() is a
- parameter because Part B names its CI columns ll ul (and those names reach
+ Derives from groundfishRDM post_svy_by_domain. Differences: 
+ over() is a parameter because calibration Part B runs over my_dom_id2; 
+ civars() is a parameter because Part B names its CI columns ll ul (and those names reach
  the saved .dta as llsf_keep_mrip etc.) while Part A names them ll95 ul95;
  domlabel() lets the SE-imputation round post the domain string literally.
 
