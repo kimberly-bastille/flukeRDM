@@ -304,5 +304,5 @@ foreach s of local statez {
 		}
 }	
 	
-
+graph close _all
 display "compare_projection_data_to_MRIP.do: finished."

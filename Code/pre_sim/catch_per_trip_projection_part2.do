@@ -49,7 +49,8 @@ do "$input_code_cd\catch_per_trip_programs.do"
 local regions "MA RI CT NY NJ DE MD VA NC" ;
 set more off ;
 
-foreach s of local regions {;
+quietly foreach s of local regions {;
+     noisily display "Working on calibration catch draws for region `s' " ;
 
     /* this state's calendar of days with directed trips, all draws */
     tempfile base ;
@@ -96,6 +97,8 @@ foreach s of local regions {;
         compress ;
 
         save "$proj_catch_data_cd\proj_catch_draws_`s'_`i'.dta", replace ;
+        noisily display "proj_catch_draws_`s'_`i'.dta saved" ;
+
     };
 };
 

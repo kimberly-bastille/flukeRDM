@@ -532,7 +532,8 @@ global fitted_sizes
 
 levelsof domain, local(regs)
 
-foreach r of local regs {
+quietly foreach r of local regs {
+	noisily display "processing regulations `r'"
     use `new', clear
     keep if domain=="`r'"
     di "`r'"
@@ -618,12 +619,14 @@ rename fitted_l length
 
 * truncate the fitted distribution to the observed range
 levelsof domain, local(doms)
-foreach d of local doms{
-quietly summarize length if observed_prob_base!=0 & !missing(observed_prob_base) & domain=="`d'"
-return list
-local minL = `r(min)'
-local maxL = `r(max)'
-drop if (length<`minL' | length>`maxL' ) & domain=="`d'"
+quietly foreach d of local doms{
+	summarize length if observed_prob_base!=0 & !missing(observed_prob_base) & domain=="`d'"
+	return list
+	local minL = `r(min)'
+	local maxL = `r(max)'
+	drop if (length<`minL' | length>`maxL' ) & domain=="`d'"
+	noisily di "Truncated length distribution of domain `d'.  Rows dropped: `=r(N_drop)' ""
+
 }
 
 egen sum_fitted_prob=sum(fitted_prob), by(domain)
