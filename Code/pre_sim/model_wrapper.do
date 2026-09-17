@@ -237,10 +237,10 @@ loc catch_at_length_project=1		// Generate projection-year catch-at-length
 loc catch_per_trip_project_part1=1       // Part 1 of PROJECTED catch per trip
 loc copula2_in_R=0      			 // Projection part of copula in R 
 loc catch_per_trip_project_part2=1       // Part 2 of PROJECTED catch per trip
-loc compare_project_to_MRIP=1       // Compare projection data to MRIP
+loc compare_project_to_MRIP=0       // Compare projection data to MRIP
 
-loc prep_NAA_for_dashboard = 1		// Pull Assessment data
-loc push_NAA_to_gdrive =1 			// Convert Assessment data to Rds, reshape to long, and push to googledrive
+loc prep_NAA_for_dashboard = 0		// Pull Assessment data
+loc push_NAA_to_gdrive =0			// Convert Assessment data to Rds, reshape to long, and push to googledrive
 loc run_calibration =0 				// Run calibration /sim/R wrapper.R  Will Not run until the hardcoded paths are fixed.
 	
 	
