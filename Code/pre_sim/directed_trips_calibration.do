@@ -77,7 +77,7 @@ clear
 * Pull in MRIP data
 tempfile tl1 cl1
 dsconcat $triplist
-
+assert _N>1
 // dtrip will be used to estimate total directed trips
 gen dtrip=1
 
@@ -87,6 +87,7 @@ save `tl1'
 clear
 
 dsconcat $catchlist
+assert _N>1
 sort year strat_id psu_id id_code
 replace common=subinstr(lower(common)," ","",.)
 save `cl1'

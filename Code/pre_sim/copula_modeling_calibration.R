@@ -35,18 +35,11 @@
 # supplies the dependence between them. The survey-weighted correlations
 # estimated here are what the copula is fitted to.
 #
-# CONTROLS AT THE TOP OF THE FILE (the "---- controls ----" block), and one
-# important consequence:
+# CONTROLS AT THE TOP OF THE FILE 
 #   n_sim    simulated trips drawn per stratum
-#   n_draws  simulation draws written, one output file per state per draw
 #   n_reps   replicate weights used for the survey variance estimates
 #
-# n_draws DOES NOT READ STATA'S $ndraws (set in model_wrapper.do), so the two
-# are kept in step by hand. n_draws must be at least $ndraws:
-# calibration_catch_per_trip_part2.do reads draw files 1..$ndraws and fails at
-# the first one missing. A larger n_draws only writes files that nothing reads.
-# copula_modeling_projection.R has its own n_draws, under the same rule for
-# catch_per_trip_projection_part2.do.
+#   n_draws   comes from stata as an argument. 
 #
 # INVOKED FROM STATA via `rscript using', not sourced by the R wrapper. The
 # wrapper comment warns that this step "takes a while and will look like it's
@@ -56,6 +49,14 @@
 ################################################################################
 ################################################################################
 
+# Define arguments
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 1) {
+  stop("Error: This script requires exactly three arguments.", call. = FALSE)
+}
+
+#read in arguments. Ensure they are numeric
+n_draws  <- as.numeric(sub("cal_","",args[1]))
 
 # ---- packages ----
 required_pkgs <- c(
@@ -102,7 +103,6 @@ misc_data_dir<-file.path(sf.data.dir, "miscellaneous")
 
 # ---- controls ----
 n_sim   <- 5000
-n_draws <- 30
 n_reps  <- 200
 
 statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")

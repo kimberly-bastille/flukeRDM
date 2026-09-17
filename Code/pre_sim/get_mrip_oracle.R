@@ -73,7 +73,8 @@ mrip_pull <- mrip_microdata(
   years = yearlist, waves = wavelist,
   typ = c('trip', 'catch', 'size', 'size_b2'),
   format = c('nefsc_db'),
-  nefsc_db_con=con_name
+  nefsc_db_con=con_name,
+  calibration_year=mrip_calibration_year
 )
 
 

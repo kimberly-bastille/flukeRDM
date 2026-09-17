@@ -819,7 +819,7 @@ foreach s of local statez {
 }	
 
 		
-
+graph close _all
 	
 	
-	
+display "compare_calibration_data_to_MRIP.do: finished."
