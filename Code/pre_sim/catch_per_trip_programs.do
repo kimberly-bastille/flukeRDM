@@ -52,9 +52,8 @@
                history, before the retirement commit. The extraction was
                validated by exact-match comparison of every output file, old
                against new. Two things follow, and both matter when editing:
-               (1) Any Behaviour marked PRESERVED looks like a mistake and is kept
-               on purpose - an always-true condition, a variable assigned and
-               never read, an unreachable guard. Read the note at each site
+               (1) Any Behaviour marked PRESERVED **could** be a bug but was left 
+               on purpose. Read the note at each site
                before changing it. 
                (2) The part2 programs keep every sort, merge, duplicates drop
                and egen group of the original, including ones whose result is
@@ -986,9 +985,7 @@ end ;
  onto the trip rows by (g, gid). On exit the data are exactly where the
  original's `compress' after the merge left them; the caller does the
  file-specific tail (sort, species totals, keep, order, save).
- PRESERVED, as in the original: n_g is computed and never used; the
- "Not enough catch rows" guard after sample_with_replacement cannot fire
- (the sample leaves exactly n_needed rows); wave is destring'd four times,
+ PRESERVED, as in the original: n_g is computed and never used; wave is destring'd four times,
  of which only the first converts anything; the three di lines per group
  are kept so the console log reads as before.
  Derives from the inline catch-sampling loop of groundfishRDM part2.
@@ -1064,7 +1061,7 @@ program define sf_sample_catch_by_mode_wave ;
            WITH replacement, each pool outcome reusable across trips. */
         sample_with_replacement, n(`n_needed') ;
 
-        /* PRESERVED: cannot fire, see header */
+        /* Ensure that we have enough rows.*/
         quietly count ;
         if (r(N) < `n_needed') {;
             di as error "Not enough catch rows for st=`state' draw=`draw' mode=`md' wave=`wv' need=`n_needed' have=" r(N) ;
