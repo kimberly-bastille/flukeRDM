@@ -38,11 +38,11 @@
 # supplies the dependence between them. The survey-weighted correlations
 # estimated here are what the copula is fitted to.
 #
-# CONTROLS AT THE TOP OF THE FILE, and one important consequence:
-#   n_sim   = 5000   simulated trips drawn per stratum
-#   n_reps  = 200    replicate weights used for the survey variance estimates
+# CONTROLS AT THE TOP OF THE FILE (the "---- controls ----" block)
+#   n_sim    simulated trips drawn per stratum
+#   n_reps   replicate weights used for the survey variance estimates
 #
-# n_draws reads $ndraws. 
+#   n_draws  comes as an argument from stata.
 #
 # INVOKED FROM STATA via `rscript using', not sourced by the R wrapper. The
 # wrapper comment warns that this step "takes a while and will look like it's
