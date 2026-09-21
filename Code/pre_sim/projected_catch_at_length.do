@@ -362,6 +362,10 @@ foreach a of local ages{
 	replace s`a'=0 if s`a'<=0
 }
 
+local newages = "s" + subinstr("`ages'", " ", " s", .) 
+egen smoothed_nfish=rowtotal(`newages') 
+drop `newages' 
+
 append using `master'
 save `master', replace
 clear                            
@@ -372,8 +376,6 @@ replace region=domain1
 replace species=domain2
 drop domain1 domain2
 
-egen smoothed_nfish=rowtotal(s0-s8)
-drop s0-s8
 
 *  generate smoothed and unsmoothed proprtions at age
 egen sum_smooth=sum(smoothed_nfish), by(age species region)	
