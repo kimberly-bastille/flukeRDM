@@ -601,9 +601,8 @@ system.time({
       log_sum_base = log((exp(v0_trip) + exp(v_optout)))  )]
     
     # CV
-    # Here I take the negative of the CS formula for easier interpretability of model output
     mean_trip_data[, `:=`(
-      CV = -(1/beta_cost)*(log_sum_alt - log_sum_base))]
+      CV = (1/beta_cost)*(log_sum_alt - log_sum_base))]
     
     
     new_cols <- c("tot_keep_sf_new", "tot_rel_sf_new", "tot_cat_sf_new",
