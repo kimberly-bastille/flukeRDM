@@ -129,29 +129,6 @@ code_cd=here("Code", "sim")
 input_data_cd="C:/Users/andrew.carr-harris/Desktop/MRIP_data_2025"
 iterative_input_data_cd="E:/Lou_projects/flukeRDM/flukeRDM_iterative_data"
 
-################################################################################
-################################################################################
-# Section A2: The Stata hand-off - INSTRUCTIONS ONLY, nothing runs here
-################################################################################
-################################################################################
-
-# Everything in this section is commented out. It is the manual checklist an
-# operator follows before running this file, and it is also the exact point
-# where GroundfishRDM's wrapper chain differs: there, the Stata wrapper calls
-# the R wrapper, so the two stages cannot be run out of order. Here the link is
-# a comment, so the ordering is enforced only by the operator remembering it.
-# The RStata option lines and the stata() call below would automate the
-# hand-off if uncommented; note the stata() path still points at the old
-# rdmtool/cod_haddock repository, not flukeRDM.
-
-#Stata code extracts and prepares the data needed for the simulation
-
-#Connect Rstudio to Stata
-#options("RStata.StataPath" = "\"C:\\Program Files\\Stata17\\StataMP-64\"")
-#options("RStata.StataVersion" = 17)
-
-#Read in number of original draws.
-
 # Number of model iterations. Match Stata's $ndraws
 # (model_wrapper.do) using the argument in Stata call
 # Define arguments
@@ -169,20 +146,6 @@ cat("Number of model iterations selected:", n_simulations, "\n")
 
 # n_draws is not referenced anywhere in this file or the scripts it sources.
 n_draws<-50 #Number of simulated trips per day
-
-#First, open "$code_cd\model wrapper.do" and set globals:
-#a) data years for different datasets
-#b) number of draws (ndraws), which should be the same as the object n_simulations above
-#c) cd's
-
-#Second, open "$code_cd\set regulations.do" and set regulations for the calibration and projection period.
-
-#Third, run the model wrapper code below:
-#stata('do "C:/Users/andrew.carr-harris/Desktop/Git/rdmtool/lou_files/cod_haddock/code/model wrapper.do"')
-
-###################################################
-
-
 
 
 ###################################################
