@@ -23,6 +23,9 @@ Maine). The two share a common origin and a near-identical house style — same 
 filenames, same toggle convention, same `$developer` startup sequence. They have since
 diverged slightly, the team has focused on groundfishRDM in advance of the 2027 management cycle.
 
+We have built some [data flow diagrams](https://github.com/NEFSC/READ-SSB-RecDSTDataFlow) to help orient you. 
+
+
 ## Repository Structure
 
 | Path | Contents |
