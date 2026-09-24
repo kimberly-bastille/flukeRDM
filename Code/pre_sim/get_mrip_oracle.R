@@ -11,7 +11,7 @@
 # Dependencies: Sources developer_setup.R (for sf.data.dir). Requires Oracle
 #               access to MRIP data tables and RECDBS schema
 # Pipeline:     Step 2 of model_wrapper.do (gated by pull_MRIP), invoked via
-#               `rscript using ... args(first last)`, and followed immediately by
+#               `rscript using ... args(mrip_calibration_year first_yr last_yr)`, and followed immediately by
 #               tidyup_mrip_data_fromR.do. Also runnable standalone:
 #               Rscript get_mrip_oracle.R cal_2018 2023 2025.
 ################################################################################

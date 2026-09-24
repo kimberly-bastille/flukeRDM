@@ -17,7 +17,12 @@
                directory must already be the project root so that `here'
                resolves correctly (the header comment below describes the
                profile.do trick for this). Requires the user-written commands
-               xsvmat, gammafit, grc1leg, rscript and here.  Some R scripts that a
+               xsvmat, gammafit, grc1leg, and here.  
+
+			   forked rscript (improved error handling) installed with 
+			      net install rscript, from("https://raw.githubusercontent.com/mle2718/rscript/master") replace
+
+			   Some R scripts that a
                are called will copy files from Google Drive or write files to 
 			   Google Drive.  If you have not already connected to google drive, 
 			   run "Code/helpers/googledrivesetup.R".  If you do not the
@@ -27,6 +32,12 @@
                Runs 17 scripts across steps 0-9. Chained to the R
                stage. Must later Run Run_Model.R for projections.
 
+   Before running: this wrapper uses `here` to locate the project root, so you
+   MUST change into the project directory first. A convenient pattern is to add
+       global flukeRDMdir "path to this project"
+   to your profile do-file and run `cd "$flukeRDMdir"` before this script.
+
+			   
  THINGS THAT MUST BE UPDATED EVERY YEAR (all in the "Adjust globals" block):
    $yr_wvs, $yearlist, $wavelist       which MRIP files to read
    $calibration_year, _num             which year is being calibrated
@@ -41,6 +52,10 @@
  Additionally set_regulations.do, called from within step 2, holds the season
  and bag/size limits and must be reviewed each year.
 
+  Forked rscript install. Monitor https://github.com/reifjulian/rscript/pull/13. When merged, you can simply do:
+	net install rscript, from("https://raw.githubusercontent.com/reifjulian/rscript/master") replace
+
+ 
  THREE TOGGLES GATE NOTHING (defined in EXECUTION CONTROL, no matching `if'
  block anywhere in this file):
    prep_cpt_for_dashboard = 0   self-labeled NOT WRITTEN; the Groundfish repo
@@ -56,11 +71,13 @@
 *******************************************************************************/
 
 /**** SFSBSB RDM code wrapper ****/
-/* This uses the user written command here to set directories*/
-/* It is not as good as R's version. Before running this code, you must change directories into project directory 
-One easy way to do this is to add a line to your profile do that store that directory in the 
-global flukeRDMdir "path to this project"
-and then cd "$flukeRDMdir" right before running this code
+
+/******************************************************************************/
+/******************************************************************************/
+/* Section A: Year-specific global parameters (UPDATE EVERY YEAR) */
+/******************************************************************************/
+/******************************************************************************/
+
 
 **Data availability**
 
@@ -177,9 +194,16 @@ global NEFSC_svy_yrs "inlist(year,2024, 2023, 2022)"
 	// https://www.bls.gov/data/inflation_calculator.htm, January 2022 - January 202X 
 global inflation_expansion=1.31 
 
-/* find the root of the project 
-prior to running the wrapper, you must change to the $flukeRDMdir so here picks up the project
-*/
+
+
+/******************************************************************************/
+/******************************************************************************/
+/* Section B: Directories, log, and seed */
+/******************************************************************************/
+/******************************************************************************/
+/* `here' finds the project root. This only works if you have already cd'd into
+   the project directory (see the "Before running" note in the header). */
+
 
 here, nogit 
 do "${here}/Code/helpers/developer_setup_stata.do"
@@ -204,27 +228,29 @@ capture mkdir $log_dir
 cap log close
 log using "${log_dir}\sf_model_wrapper_log_$S_DATE.smcl", replace
 														   
+timer clear 1        // Resets timer #1
+timer on 1           // Starts timing
 
 
 global seed 03211990
 
 
 **********************************************************************
-************************ EXECUTION CONTROL ***************************
+/* Section D: Execution control (toggle each pipeline step on/off) */
 **********************************************************************
 
 // Control which modules to run (set to 0 to skip)
 loc pull_assessment = 0		 		// Pull Assessment data
-loc pull_MRIP= 1			 		// Pull MRIP data
+loc pull_MRIP= 0			 		// Pull MRIP data
 loc processMRIP = 0		 			// deal with casing MRIP data
 loc assemblemriplists = 0		 	// deal with casing MRIP data
-loc estimate_dtrips = 1				// Estimate Directed Trips 
+loc estimate_dtrips = 0				// Estimate Directed Trips 
 loc costs_per_trip = 0			// Create Distributions of costs per trip (run 1x)
-loc draw_angler_preferences = 1		// Create draw of angler preference parameters (run 1x)
+loc draw_angler_preferences = 0		// Create draw of angler preference parameters (run 1x)
 loc catch_per_trip1 = 1				// Part 1 of catch per trip
 loc copula1_in_R = 0				// Copula model in R
-loc catch_per_trip2 = 1				// Part 2 of catch per trip
-loc compare_calibration_MRIP = 1	// compare calibration output to MRIP
+loc catch_per_trip2 = 0				// Part 2 of catch per trip
+loc compare_calibration_MRIP = 0	// compare calibration output to MRIP
 /* The next three toggles gate NOTHING - there is no matching `if' block for
    any of them below. See the header for details. */
 loc prep_cpt_for_dashboard= 0		// prep data for dashboard NOT IN WRAPPER. NOT WRITTEN, See Groundfish repo
@@ -232,11 +258,11 @@ loc Rpush_to_gdrive =0 				// Push to google drive in R NOT IN WRAPPER. WRITTEN 
 loc angler_demogs	=0				// add additonal angler demographics
 
 
-loc generate_baseline=1				// Generate baseline-year catch-at-length
-loc catch_at_length_project=1		// Generate projection-year catch-at-length
-loc catch_per_trip_project_part1=1       // Part 1 of PROJECTED catch per trip
+loc generate_baseline=0				// Generate baseline-year catch-at-length
+loc catch_at_length_project=0		// Generate projection-year catch-at-length
+loc catch_per_trip_project_part1=0      // Part 1 of PROJECTED catch per trip
 loc copula2_in_R=0      			 // Projection part of copula in R 
-loc catch_per_trip_project_part2=1       // Part 2 of PROJECTED catch per trip
+loc catch_per_trip_project_part2=0       // Part 2 of PROJECTED catch per trip
 loc compare_project_to_MRIP=0       // Compare projection data to MRIP
 
 loc prep_NAA_for_dashboard = 0		// Pull Assessment data
@@ -259,7 +285,11 @@ if `proto' {
 	global ndraws 3
 }
 
-**************************************************Model calibration ************************************************** 
+/******************************************************************************/
+/******************************************************************************/
+/* Section E: Run the pipeline (each step gated by its Section D toggle) */
+/******************************************************************************/
+/******************************************************************************/
 
 // 0) Pull Assessment data from google.
 
@@ -438,7 +468,7 @@ if `compare_project_to_MRIP'{
 		do "$input_code_cd\compare_projection_data_to_MRIP.do"
 }
 
-display "model_wrapper.do: Stata pre-simulation stage complete. NEXT STEP IS MANUAL - run Code/sim/'R code wrapper.R' to perform the R calibration; this wrapper does not call it."
+display "model_wrapper.do: Stata pre-simulation stage complete. ""
 // 10) Run the calibration routine in R, export files to Google Drive
 
 /* need to fix hardcoded paths*/
@@ -452,13 +482,16 @@ if `run_calibration'{
 }
 
 
-
 if (`proto'==1) {
 	display "Prototyping option set on. ndraws global set to $ndraws"
 }
 
+timer off 1          // Stops timing
+timer list 1         // Displays elapsed time in seconds
 
 
+
+log close
 
 
 
