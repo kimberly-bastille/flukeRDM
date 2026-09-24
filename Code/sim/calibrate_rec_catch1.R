@@ -10,8 +10,8 @@
 #               depending on which direction the model missed MRIP.
 #               calibration_routine_final.R sources this file repeatedly,
 #               varying p, until simulated harvest lands within tolerance.
-# Inputs:       calib_catch_draws_<ST>_<i>.fst, baseline_catch_at_length.csv,
-#               L_W_Conversion.csv (read from a hardcoded absolute path), and
+# Inputs:       calib_catch_draws_<ST>_<i>.fst, baseline_catch_at_length_state.csv,
+#               L_W_Conversion.csv, and
 #               the MRIP totals, read via the calling environment.
 # Outputs:      None written directly. Returns results to the search routine,
 #               which persists calibrated_model_stats, base_outcomes and
@@ -29,8 +29,6 @@
 #               files rather than shared. See those definitions in
 #               calibrate_rec_catch0_optimized.R for their documentation;
 #               only what is new here is documented below.
-# Dev paths:    1 hardcoded absolute path to a developer's local machine
-#               (C:\), at line 499 (the L_W_Conversion.csv read).
 #
 # THE UTILITY ADJUSTMENT - the subtlest thing in this file.
 # Reallocation creates a conflict between two uses of the same fish. A fish
@@ -498,13 +496,13 @@ simulate_species_realloc <- function(catch_dt,
 # preload catch-at-length once instead of reading inside the loop
 l_w_conversion <- data.table::as.data.table(
   readr::read_csv(
-    "C:/Users/andrew.carr-harris/Desktop/Git/flukeRDM/Data/L_W_Conversion.csv",
+    file.path(final_process_misc_cd, "L_W_Conversion.csv"),
     show_col_types = FALSE
   )
 )
 
   size_lookup_raw <- data.table::as.data.table(
-    readr::read_csv(file.path(input_data_cd, "baseline_catch_at_length.csv"),
+    readr::read_csv(file.path(final_process_misc_cd, "baseline_catch_at_length_state.csv"),
                     show_col_types = FALSE))
   
   size_lookup_raw <- size_lookup_raw[
@@ -540,8 +538,8 @@ l_w_conversion <- data.table::as.data.table(
 # one state-draw-mode run; expects s, i, md in the parent environment
 dtrip_state <- as.data.table(
   read_fst(file.path(
-    iterative_input_data_cd,
-    paste0("archive/directed_trips_calibration/directed_trips_calibration_", s, ".fst")
+    final_process_misc_cd,
+    paste0("directed_trips_calibration_", s, ".fst")
   ))
 )
 
@@ -581,16 +579,23 @@ if (nrow(dtripz) == 0L || sum(dtripz$dtrip, na.rm = TRUE) == 0) {
 
   catch_draw_dt <- as.data.table(
     read_fst(file.path(
-      iterative_input_data_cd,
-      paste0("archive/calib_catch_draws/calib_catch_draws_", s, "_", i, ".fst")
+      final_process_calib_catch_cd,
+      paste0("calib_catch_draws_", s, "_", i, ".fst")
     ))
   )
 
   catch_data <- merge(catch_draw_dt[mode == md], dtripz, by = c("mode", "date_parsed"), all.x = TRUE)
 
-  angler_dems <- unique(catch_data[, .(date_parsed, mode, tripid, total_trips_12, age, cost)])
+  angler_dems <- unique(catch_data[, .(date_parsed, mode, tripid, total_trips_12, age, cost_sim)])
 
-  drop_cols <- intersect(c("cost", "total_trips_12", "age"), names(catch_data))
+  pref_params <- unique(
+    catch_data[, .(date_parsed, mode, tripid, beta_cost, beta_opt_out_age,
+                   beta_opt_out_avidity, beta_sqrt_sf_keep, beta_sqrt_sf_rel,
+                   beta_sqrt_bsb_keep, beta_sqrt_bsb_release, beta_sqrt_sf_bsb_keep,
+                   beta_sqrt_scup_catch, beta_opt_out)]
+  )
+  
+  drop_cols <- intersect(c("cost_sim", "total_trips_12", "age"), names(catch_data))
   if (length(drop_cols)) catch_data[, (drop_cols) := NULL]
 
   sf_size_data <- size_lookup_raw[
@@ -703,23 +708,10 @@ if (nrow(dtripz) == 0L || sum(dtripz$dtrip, na.rm = TRUE) == 0) {
     tot_sf_catch   = tot_keep_sf_new + tot_rel_sf_new
   )]
 
-  parameters <- unique(trip_data[, .(date_parsed, mode, tripid)])
-  parameters[, `:=`(
-    beta_sqrt_sf_keep     = rnorm(.N, mean = 0.827, sd = 1.267),
-    beta_sqrt_sf_release  = rnorm(.N, mean = 0.065, sd = 0.325),
-    beta_sqrt_bsb_keep    = rnorm(.N, mean = 0.353, sd = 0.129),
-    beta_sqrt_bsb_release = rnorm(.N, mean = 0.074, sd = 0),
-    beta_sqrt_sf_bsb_keep = rnorm(.N, mean = -0.056, sd = 0.196),
-    beta_sqrt_scup_catch  = rnorm(.N, mean = 0.018, sd = 0),
-    beta_opt_out          = rnorm(.N, mean = -2.056, sd = 1.977),
-    beta_opt_out_avidity  = rnorm(.N, mean = -0.010, sd = 0),
-    beta_opt_out_age      = rnorm(.N, mean = 0.010, sd = 0),
-    beta_cost             = -0.012
-  )]
 
-  setkey(parameters, date_parsed, mode, tripid)
+  setkey(pref_params, date_parsed, mode, tripid)
   setkey(angler_dems, date_parsed, mode, tripid)
-  trip_data <- merge(trip_data, parameters, by = c("date_parsed", "mode", "tripid"), all.x = TRUE)
+  trip_data <- merge(trip_data, pref_params, by = c("date_parsed", "mode", "tripid"), all.x = TRUE)
   trip_data <- merge(trip_data, angler_dems, by = c("date_parsed", "mode", "tripid"), all.x = TRUE)
 
   setorder(trip_data, date_parsed, mode, tripid, catch_draw)
@@ -742,19 +734,19 @@ if (nrow(dtripz) == 0L || sum(dtripz$dtrip, na.rm = TRUE) == 0) {
 
   fst::write_fst(
     baseline_outcomes,
-    file.path(iterative_input_data_cd, 
-              paste0("archive/base_outcomes/base_outcomes_", s, "_", md, "_", i, ".fst"))
+    file.path(final_process_outcomes_cd, 
+              paste0("base_outcomes_", s, "_", md, "_", i, ".fst"))
   )
 
   trip_data[, `:=`(
     vA_trip =
       beta_sqrt_sf_keep * sqrt(tot_keep_sf_util) +
-      beta_sqrt_sf_release * sqrt(tot_rel_sf_util) +
+      beta_sqrt_sf_rel * sqrt(tot_rel_sf_util) +
       beta_sqrt_bsb_keep * sqrt(tot_keep_bsb_util) +
       beta_sqrt_bsb_release * sqrt(tot_rel_bsb_util) +
       beta_sqrt_sf_bsb_keep * (sqrt(tot_keep_sf_util) * sqrt(tot_keep_bsb_util)) +
       beta_sqrt_scup_catch * sqrt(tot_scup_catch) +
-      beta_cost * cost,
+      beta_cost * cost_sim,
 
     vA_optout =
       beta_opt_out +
@@ -768,8 +760,8 @@ if (nrow(dtripz) == 0L || sum(dtripz$dtrip, na.rm = TRUE) == 0) {
     c("beta_cost", "beta_opt_out", "beta_opt_out_age",
       "beta_opt_out_avidity", "beta_sqrt_bsb_keep", "beta_sqrt_bsb_release",
       "beta_sqrt_scup_catch", "beta_sqrt_sf_bsb_keep",
-      "beta_sqrt_sf_keep", "beta_sqrt_sf_release",
-      "age", "cost", "total_trips_12"),
+      "beta_sqrt_sf_keep", "beta_sqrt_sf_rel",
+      "age", "cost_sim", "total_trips_12"),
     names(mean_trip_data)
   )
   if (length(drop_cols)) mean_trip_data[, (drop_cols) := NULL]
@@ -836,8 +828,8 @@ if (nrow(dtripz) == 0L || sum(dtripz$dtrip, na.rm = TRUE) == 0) {
   n_choice_out <- aggregate_trip_data[, .(date_parsed, mode, n_choice_occasions, estimated_trips)]
   fst::write_fst(
     n_choice_out,
-    file.path(iterative_input_data_cd, 
-              paste0("archive/n_choice_occasion/n_choice_occasions_", s, "_", md, "_", i,".fst"))
+    file.path(final_process_choice_occasions_cd, 
+              paste0("n_choice_occasions_", s, "_", md, "_", i,".fst"))
   )
 
   list_names <- c(

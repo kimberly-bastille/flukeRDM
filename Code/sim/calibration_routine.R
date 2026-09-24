@@ -56,11 +56,7 @@
 #     it reads variables like p_rel_to_keep_sf by name rather than taking
 #     arguments. This is the coupling to be careful of when refactoring.
 #
-# NOTE - THE STATE AND DRAW LISTS ARE RESTRICTED. Below, the full nine-state
-# vector is immediately overwritten by c("MA", "RI"), and draws is set to 1:3.
-# As committed this calibrates two states and three draws, not the production
-# set. This reads as debug configuration left in place; it is deliberately NOT
-# changed here.
+
 ################################################################################
 ################################################################################
 
@@ -75,7 +71,7 @@ library(fst)
 
 
 if (!exists("MRIP_comparison", inherits = FALSE)) {
-  MRIP_comparison <- read_dta("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/calib_catch_draws/simulated_catch_totals.dta") |>
+  MRIP_comparison <- read_dta(file.path(final_process_misc_cd, "simulated_catch_totals.dta")) |>
     as.data.table()
 }
 
@@ -91,8 +87,8 @@ setnames(
 )
 
 baseline_output0 <- as.data.table(fst::read_fst(
-  file.path(iterative_input_data_cd,
-            paste0("archive/miscellaneous/calibration_comparison.fst"))))
+  file.path(final_process_misc_cd,
+            paste0("calibration_comparison.fst"))))
 
 # Reconstruct catch columns defensively if the step-0 file omitted them
 if (!("MRIP_catch" %in% names(baseline_output0)) && all(c("MRIP_keep", "MRIP_rel") %in% names(baseline_output0))) {
@@ -108,13 +104,10 @@ if (!("pct_diff_catch" %in% names(baseline_output0)) && all(c("diff_catch", "MRI
   baseline_output0[, pct_diff_catch := fifelse(MRIP_catch != 0, 100 * diff_catch / MRIP_catch, NA_real_)]
 }
 
-# The second assignment overwrites the first: as committed this runs MA and RI
-# only, for 3 draws. See the header - this looks like debug configuration.
-states <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
-states <- c("MA", "RI")
 
+states <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
 mode_draw <- c("sh", "pr", "fh")
-draws <- 1:3
+draws <- 1:n_simulations
 
 # states <- c("MA")
 # mode_draw <- c("pr")
@@ -130,6 +123,7 @@ tol_abs_fish <- 500
 tol_abs_pct  <- 5
 max_iter     <- 25
 p_tol        <- 1e-4
+start_offset <- 0.10  # Alternate initial harvest side across draws.
 
 species_vec <- c("sf", "bsb", "scup")
 
@@ -224,8 +218,9 @@ extract_species_row <- function(dt, sp, md, s, i) {
 #'   search starts. Direction comes from PASS 0's flags: rel_to_keep when the
 #'   model under-harvested, keep_to_rel when it over-harvested, "none" when it
 #'   already matches. The starting proportion is PASS 0's closed-form estimate
-#'   of what would close the gap, clamped to [0, 1], and the bracket is opened
-#'   to [0, 1] so the search can move either way from it.
+#'   of what would close the gap, offset by 0.10 to alternate the initial
+#'   harvest side across draws, then clamped to [0, 1]. The bracket spans
+#'   [0, 1] so the search can move either way from that starting value.
 #'
 #'   Two zero-target cases are handled up front. If MRIP harvest and model
 #'   harvest are both zero there is nothing to search and the stratum is
@@ -235,7 +230,17 @@ extract_species_row <- function(dt, sp, md, s, i) {
 #' @return A list holding direction, the current proportion p, the bracket
 #'   endpoints lo and hi, whether tolerance is already met, a convergence
 #'   flag, and slots for the best-scoring attempt seen so far.
-make_state <- function(base_row) {
+make_state <- function(base_row, draw) {
+
+  # Odd draws start toward higher harvest; even draws toward lower harvest.
+  # Increasing p raises harvest for rel_to_keep and lowers it for keep_to_rel.
+  start_p <- function(center, direction) {
+    center <- if (length(center) != 1L || !is.finite(center)) 0 else as.numeric(center)
+    if (direction == "none") return(0)
+    harvest_sign <- if (draw %% 2L == 1L) 1 else -1
+    p_sign <- if (direction == "rel_to_keep") harvest_sign else -harvest_sign
+    max(0, min(1, center + p_sign * start_offset))
+  }
   
   mrip_keep  <- as.numeric(base_row$MRIP_keep)
   model_keep <- as.numeric(base_row$model_keep)
@@ -261,7 +266,7 @@ make_state <- function(base_row) {
     # if model_keep > 0 and MRIP_keep == 0, only keep->rel makes sense
     direction <- "keep_to_rel"
     p0 <- ifelse(is.finite(base_row$p_keep_to_rel), as.numeric(base_row$p_keep_to_rel), 0)
-    p0 <- max(0, min(1, p0))
+    p0 <- start_p(p0, direction)
     
     return(list(
       direction = direction,
@@ -291,13 +296,13 @@ make_state <- function(base_row) {
     0
   }
   
-  p0 <- max(0, min(1, as.numeric(p0)))
+  p0 <- start_p(p0, direction)
   
   list(
     direction = direction,
     p = p0,
     lo = 0,
-    hi = if (p0 > 0 && p0 < 1) 1 else NA_real_,
+    hi = 1,
     achieved = FALSE,
     convergence = 1L,
     best_score = Inf,
@@ -431,6 +436,36 @@ update_bracket <- function(st, row) {
 }
   
 
+# Print the result of each simulated candidate (p is captured before the bracket advances).
+show_calibration_status <- function(phase, draw, iteration, state, mode, species, p, row, st) {
+  fmt <- function(x, digits = 0) if (length(x) != 1L || is.na(x) || !is.finite(x)) "NA" else formatC(x, format = "f", digits = digits, big.mark = ",")
+  status <- if (isTRUE(st$achieved)) "converged" else if (st$convergence != 1L) "stopped" else "searching"
+  cat(sprintf("[%s] draw=%s iter=%d/%d state=%s mode=%s species=%s direction=%s p=%s MRIP_keep=%s model_keep=%s diff_keep=%s diff_pct=%s%% status=%s\n",
+              phase, draw, iteration, max_iter, state, mode, species, st$direction,
+              fmt(p, 4), fmt(row$MRIP_keep), fmt(row$model_keep), fmt(row$diff_keep), fmt(row$pct_diff_keep, 2), status))
+  flush.console()
+}
+
+
+checkpoint_dir <- file.path(final_process_misc_cd, "calibration_checkpoints")
+dir.create(checkpoint_dir, recursive = TRUE, showWarnings = FALSE)
+
+checkpoint_path <- function(phase, s, md, i, species = NULL) {
+  suffix <- if (is.null(species)) "" else paste0("_", species)
+  file.path(checkpoint_dir, sprintf("%s_%s_%s_%s%s.rds", phase, s, md, i, suffix))
+}
+
+save_checkpoint <- function(x, path) {
+  tmp <- tempfile(pattern = "checkpoint_", tmpdir = dirname(path), fileext = ".rds")
+  on.exit(if (file.exists(tmp)) unlink(tmp), add = TRUE)
+  saveRDS(x, tmp)
+  
+  # A checkpoint becomes eligible for reuse only after its write completes.
+  if (file.exists(path)) unlink(path)
+  if (!file.rename(tmp, path)) stop("Could not install checkpoint: ", path)
+}
+
+
 calibrated <- vector("list", length(states) * length(mode_draw) * length(draws))
 k <- 1L
 
@@ -438,6 +473,28 @@ for (s in states) {
   for (md in mode_draw) {
     for (i in draws) {
 
+      first_pass_path <- checkpoint_path("first_pass", s, md, i)
+      
+      if (file.exists(first_pass_path)) {
+        saved <- readRDS(first_pass_path)
+        expected_species <- baseline_output0[state == s & mode == md & draw == i, unique(species)]
+        
+        if (!data.table::is.data.table(saved)) saved <- data.table::as.data.table(saved)
+        
+        valid <- nrow(saved) == length(expected_species) &&
+          all(c("state", "mode", "draw", "species", "iter_used") %in% names(saved)) &&
+          all(saved$state == s & saved$mode == md & saved$draw == i) &&
+          setequal(saved$species, expected_species) &&
+          !anyDuplicated(saved$species)
+        
+        if (!valid) stop("Invalid first-pass checkpoint: ", first_pass_path)
+        
+        calibrated[[k]] <- saved
+        k <- k + 1L
+        message("Skipping completed first pass: ", s, " / ", md, " / draw ", i)
+        next
+      }
+      
       baseline_targets_current <- baseline_output0[state == s & draw == i & mode == md]
       if (nrow(baseline_targets_current) == 0L) next
 
@@ -449,6 +506,8 @@ for (s in states) {
           keep_to_rel_scup = 0, rel_to_keep_scup = 0, p_rel_to_keep_scup = 0, p_keep_to_rel_scup = 0, convergence_scup = NA_real_,
           iter_used = 0L
         )]
+        save_checkpoint(out, first_pass_path)
+        message("Saved first-pass checkpoint: ", first_pass_path)
         calibrated[[k]] <- out
         k <- k + 1L
         next
@@ -457,7 +516,7 @@ for (s in states) {
       states_by_sp <- setNames(vector("list", length(species_vec)), species_vec)
       for (sp in species_vec) {
         base_row <- extract_species_row(baseline_targets_current, sp, md, s, i)
-        states_by_sp[[sp]] <- make_state(base_row)
+        states_by_sp[[sp]] <- make_state(base_row, i)
         states_by_sp[[sp]]$best_row <- copy(base_row)
         states_by_sp[[sp]]$best_score <- score_species(
           base_row$diff_keep,
@@ -486,14 +545,16 @@ for (s in states) {
         
 
         push_globals(states_by_sp, target_env = environment())
-        source(file.path(code_cd, "calibrate_rec_catch1_final.R"), local = environment())
+        source(file.path(code_cd, "calibrate_rec_catch1.R"), local = environment())
         
         last_result <- copy(as.data.table(calib_comparison1))
 
         all_done <- TRUE
         for (sp in species_vec) {
           row <- extract_species_row(last_result, sp, md, s, i)
+          attempted_p <- states_by_sp[[sp]]$p
           states_by_sp[[sp]] <- update_bracket(states_by_sp[[sp]], row)
+          show_calibration_status("calibration", i, iter_used + 1L, s, md, sp, attempted_p, row, states_by_sp[[sp]])
 
           if (!states_by_sp[[sp]]$achieved && states_by_sp[[sp]]$convergence == 1L) {
             all_done <- FALSE
@@ -589,6 +650,8 @@ for (s in states) {
                                                              "rel_to_keep_new","keep_to_rel_new","p_rel_to_keep_new","p_keep_to_rel_new", 
                                                              "floor_used_in_sf", "floor_used_in_bsb", "floor_used_in_scup"))))
 
+      save_checkpoint(final_rows, first_pass_path)
+      message("Saved first-pass checkpoint: ", first_pass_path)
       calibrated[[k]] <- final_rows
       k <- k + 1L
     }
@@ -724,7 +787,24 @@ if (nrow(problem_rows) > 0) {
     i  <- row_i$draw
     target_species <- row_i$species
     
-          
+    rerun_path <- checkpoint_path("floor4", s, md, i, target_species)
+    
+    if (file.exists(rerun_path)) {
+      saved <- data.table::as.data.table(readRDS(rerun_path))
+      valid <- all(c("state", "mode", "draw", "species", "iter_used") %in% names(saved)) &&
+        nrow(saved) == length(species_vec) &&
+        all(saved$state == s & saved$mode == md & saved$draw == i) &&
+        setequal(saved$species, species_vec) &&
+        !anyDuplicated(saved$species)
+      
+      if (!valid) stop("Invalid wider-floor checkpoint: ", rerun_path)
+      
+      rerun_results[[rr]] <- saved
+      message("Skipping completed wider-floor rerun: ", s, " / ", md,
+              " / draw ", i, " / ", target_species)
+      next
+    }
+    
           baseline_targets_current <- baseline_output0[state == s & draw == i & mode == md]
           if (nrow(baseline_targets_current) == 0L) next
           
@@ -736,15 +816,15 @@ if (nrow(problem_rows) > 0) {
               keep_to_rel_scup = 0, rel_to_keep_scup = 0, p_rel_to_keep_scup = 0, p_keep_to_rel_scup = 0, convergence_scup = NA_real_,
               iter_used = 0L
             )]
+            save_checkpoint(out, rerun_path)
             rerun_results[[rr]] <- out
-            rr <- rr + 1L
             next
           }
           
           states_by_sp <- setNames(vector("list", length(species_vec)), species_vec)
           for (sp in species_vec) {
             base_row <- extract_species_row(baseline_targets_current, sp, md, s, i)
-            states_by_sp[[sp]] <- make_state(base_row)
+            states_by_sp[[sp]] <- make_state(base_row, i)
             states_by_sp[[sp]]$best_row <- copy(base_row)
             states_by_sp[[sp]]$best_score <- score_species(
               base_row$diff_keep,
@@ -778,14 +858,16 @@ if (nrow(problem_rows) > 0) {
             
             
             push_globals(states_by_sp, target_env = environment())
-            source(file.path(code_cd, "calibrate_rec_catch1_final.R"), local = environment())
+            source(file.path(code_cd, "calibrate_rec_catch1.R"), local = environment())
             
             last_result <- copy(as.data.table(calib_comparison1))
             
             all_done <- TRUE
             for (sp in species_vec) {
               row <- extract_species_row(last_result, sp, md, s, i)
+              attempted_p <- states_by_sp[[sp]]$p
               states_by_sp[[sp]] <- update_bracket(states_by_sp[[sp]], row)
+              show_calibration_status("floor4", i, iter_used + 1L, s, md, sp, attempted_p, row, states_by_sp[[sp]])
               
               if (!states_by_sp[[sp]]$achieved && states_by_sp[[sp]]$convergence == 1L) {
                 all_done <- FALSE
@@ -881,8 +963,9 @@ if (nrow(problem_rows) > 0) {
                                                                  "rel_to_keep_new","keep_to_rel_new","p_rel_to_keep_new","p_keep_to_rel_new", 
                                                                  "floor_used_in_sf", "floor_used_in_bsb", "floor_used_in_scup"))))
           
+          save_checkpoint(final_rows, rerun_path)
+          message("Saved wider-floor checkpoint: ", rerun_path)
           rerun_results[[rr]] <- final_rows
-          rr <- rr + 1L
         }
       }
     
@@ -975,5 +1058,5 @@ problem_rows <- calibrated_combined_final[
 ][needs_rerun == TRUE]
 
 fst::write_fst(calibrated_combined_final,
-               file.path(iterative_input_data_cd,
-                         paste0("archive/miscellaneous/calibrated_model_stats.fst")))
+               file.path(final_process_misc_cd,
+                         paste0("calibrated_model_stats.fst")))

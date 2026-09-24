@@ -14,18 +14,17 @@
 #               The gaps it measures are the input to PASS 1
 #               (calibrate_rec_catch1_final.R), which reallocates harvest and
 #               discards until those gaps close.
-# Inputs:       simulated_catch_totals.dta, baseline_catch_at_length.csv,
+# Inputs:       simulated_catch_totals.dta, baseline_catch_at_length_state.csv,
 #               calib_catch_draws_<ST>_<i>.fst
 # Outputs:      calibration_comparison.fst
-# Dependencies: The objects input_data_cd, iterative_input_data_cd and
+# Dependencies: The objects final_process_misc_cd, final_process_calib_catch_cd and
 #               n_simulations must already exist in the calling environment -
 #               they are set by "R code wrapper.R", which sources this file as
 #               STEP 1.
 # Pipeline:     First of the three R calibration/projection steps. Its sibling
 #               calibrate_rec_catch1_final.R reuses the same modeling logic
 #               with reallocation added.
-# Dev paths:    1 hardcoded absolute path to a developer's local machine
-#               (E:\), at line 308.
+
 #
 # Why "optimized": an earlier version (Code/archive/calibrate_rec_catch0.R)
 # performed the same computation but re-read the catch-at-length file inside
@@ -305,9 +304,7 @@ build_compare_table <- function(summed_results, MRIP_comparison_draw, md) {
 
 message("calibrate_rec_catch0_optimized.R: starting calibration pass 0 over 9 states x 3 modes x ", n_simulations, " draws. This is a long-running step.")
 
-# Hardcoded absolute path, unlike the rest of this script, which resolves paths
-# through input_data_cd / iterative_input_data_cd.
-MRIP_comparison <- read_dta("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/calib_catch_draws/simulated_catch_totals.dta") |>
+MRIP_comparison <- read_dta(file.path(final_process_misc_cd, "simulated_catch_totals.dta")) |>
   as.data.table()
 
 setnames(
@@ -327,7 +324,7 @@ draws <- 1:n_simulations
 
 # preload catch-at-length once instead of reading inside the innermost loop
 size_lookup_raw <- as.data.table(
-  read_csv(file.path(input_data_cd, "baseline_catch_at_length.csv"),
+  read_csv(file.path(final_process_misc_cd, "baseline_catch_at_length_state.csv"),
            show_col_types = FALSE)
 )
 
@@ -348,8 +345,8 @@ for (s in states) {
 
   dtrip_state <- as.data.table(
     read_fst(file.path(
-      iterative_input_data_cd,
-      paste0("archive/directed_trips_calibration/directed_trips_calibration_", s, ".fst")
+      final_process_misc_cd,
+      paste0("directed_trips_calibration_", s, ".fst")
     ))
   )
 
@@ -364,8 +361,8 @@ for (s in states) {
 
     catch_draw_dt <- as.data.table(
       read_fst(file.path(
-        iterative_input_data_cd,
-        paste0("archive/calib_catch_draws/calib_catch_draws_", s, "_", i, ".fst")
+        final_process_calib_catch_cd,
+        paste0("calib_catch_draws_", s, "_", i, ".fst")
       ))
     )
 
@@ -416,9 +413,16 @@ for (s in states) {
       }
 
       angler_dems <- unique(
-        catch_data[, .(date, mode, tripid, total_trips_12, age, cost)]
+        catch_data[, .(date, mode, tripid, total_trips_12, age, cost_sim)]
       )
-
+      
+      pref_params <- unique(
+        catch_data[, .(date, mode, tripid, beta_cost, beta_opt_out_age,
+                       beta_opt_out_avidity, beta_sqrt_sf_keep, beta_sqrt_sf_rel,
+                       beta_sqrt_bsb_keep, beta_sqrt_bsb_release, beta_sqrt_sf_bsb_keep,
+                       beta_sqrt_scup_catch, beta_opt_out)]
+      )
+      
       sf_trip_data <- simulate_species(
         catch_dt = catch_data,
         catch_col = "sf_cat",
@@ -476,34 +480,13 @@ for (s in states) {
         tot_sf_catch   = tot_keep_sf_new + tot_rel_sf_new
       )]
 
-      parameters <- unique(trip_data[, .(date, mode, tripid)])
-
-      # These coefficient means and standard deviations are the fitted mixed
-      # logit results, transcribed as literals rather than read from
-      # preference_params.dta. See the note in the file header: the same values
-      # are used on every draw, so preference SAMPLING uncertainty is not
-      # propagated here, only across-angler heterogeneity within a draw. The
-      # sd = 0 entries are the parameters whose estimated dispersion was not
-      # significant at the 10% level.
-      parameters[, `:=`(
-        beta_sqrt_sf_keep     = rnorm(.N, mean = 0.827, sd = 1.267),
-        beta_sqrt_sf_release  = rnorm(.N, mean = 0.065, sd = 0.325),
-        beta_sqrt_bsb_keep    = rnorm(.N, mean = 0.353, sd = 0.129),
-        beta_sqrt_bsb_release = rnorm(.N, mean = 0.074, sd = 0),
-        beta_sqrt_sf_bsb_keep = rnorm(.N, mean = -0.056, sd = 0.196),
-        beta_sqrt_scup_catch  = rnorm(.N, mean = 0.018, sd = 0),
-        beta_opt_out          = rnorm(.N, mean = -2.056, sd = 1.977),
-        beta_opt_out_avidity  = rnorm(.N, mean = -0.010, sd = 0),
-        beta_opt_out_age      = rnorm(.N, mean = 0.010, sd = 0),
-        beta_cost             = -0.012
-      )]
-
-      setkey(parameters, date, mode, tripid)
+      
+      setkey(pref_params, date, mode, tripid)
       setkey(angler_dems, date, mode, tripid)
-      trip_data <- merge(trip_data, parameters, by = c("date", "mode", "tripid"), all.x = TRUE)
+      trip_data <- merge(trip_data, pref_params, by = c("date", "mode", "tripid"), all.x = TRUE)
       trip_data <- merge(trip_data, angler_dems, by = c("date", "mode", "tripid"), all.x = TRUE)
-
-      setorder(trip_data, date, mode, tripid, catch_draw)
+      # 
+      # setorder(trip_data, date, mode, tripid, catch_draw)
 
       # The utility specification. Catch enters as square roots, which imposes
       # diminishing marginal utility - the second fish is worth less than the
@@ -511,15 +494,16 @@ for (s in states) {
       # species to depend on how much of the other was kept. The opt-out
       # utility shifts with angler age and avidity, so more avid anglers are
       # less easily deterred from fishing.
+      
       trip_data[, `:=`(
         vA_trip =
           beta_sqrt_sf_keep * sqrt(tot_keep_sf_new) +
-          beta_sqrt_sf_release * sqrt(tot_rel_sf_new) +
+          beta_sqrt_sf_rel * sqrt(tot_rel_sf_new) +
           beta_sqrt_bsb_keep * sqrt(tot_keep_bsb_new) +
           beta_sqrt_bsb_release * sqrt(tot_rel_bsb_new) +
           beta_sqrt_sf_bsb_keep * (sqrt(tot_keep_sf_new) * sqrt(tot_keep_bsb_new)) +
           beta_sqrt_scup_catch * sqrt(tot_scup_catch) +
-          beta_cost * cost,
+          beta_cost * cost_sim,
 
         vA_optout =
           beta_opt_out +
@@ -533,7 +517,7 @@ for (s in states) {
         c("beta_cost", "beta_opt_out", "beta_opt_out_age",
           "beta_opt_out_avidity", "beta_sqrt_bsb_keep", "beta_sqrt_bsb_release",
           "beta_sqrt_scup_catch", "beta_sqrt_sf_bsb_keep",
-          "beta_sqrt_sf_keep", "beta_sqrt_sf_release",
+          "beta_sqrt_sf_keep", "beta_sqrt_sf_rel",
           "age", "cost", "total_trips_12"),
         names(mean_trip_data)
       )
@@ -619,6 +603,6 @@ setcolorder(calib_comparison_combined, c("state", "mode", "species", "draw",
                                                  c("state", "mode", "species", "draw"))))
 
 fst::write_fst(calib_comparison_combined,
-                   file.path(iterative_input_data_cd,
-                   paste0("archive/miscellaneous/calibration_comparison.fst")))
+                   file.path(final_process_misc_cd,
+                   paste0("calibration_comparison.fst")))
                    

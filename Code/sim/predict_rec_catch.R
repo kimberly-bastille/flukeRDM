@@ -1,7 +1,7 @@
 
 ################################################################################
 ################################################################################
-# Script:       predict_rec_catch_final.R
+# Script:       predict_rec_catch.R
 # Purpose:      Projection-year simulation. Re-runs the trip model under the
 #               PROJECTION year's regulations and catch-at-length, carrying
 #               forward the reallocation proportions the calibration settled
@@ -16,38 +16,27 @@
 #               behavior departs from strict compliance in the base year; the
 #               projection assumes that same departure persists under the new
 #               regulations, rather than re-estimating it.
-# Inputs:       projected_catch_at_length.csv, calibrated_model_stats.fst,
+# Inputs:       projected_catch_at_length_state.csv, calibrated_model_stats.fst,
 #               L_W_Conversion.csv, proj_catch_draws_<ST>_<i>.fst,
 #               base_outcomes_<ST>_<MODE>_<DRAW>.fst,
 #               n_choice_occasions_<ST>_<MODE>_<DRAW>.fst
 # Outputs:      The final_compare table of projected-vs-baseline differences.
-# Dependencies: Objects iterative_input_data_cd and input_data_cd from the
-#               calling environment - "R code wrapper.R" sources this file as
-#               STEP 3.
+# Dependencies: n_simulations from the calling wrapper; inputs reside under
+#               final_process_data_cd in the subdirectories defined below.
 # Pipeline:     Last of the three R steps. Deliberately mirrors
-#               calibrate_rec_catch1_final.R so that baseline and projection
+#               calibrate_rec_catch1.R so that baseline and projection
 #               are computed the same way and their difference is meaningful.
-# Dev paths:    1 hardcoded absolute path to a developer's local machine
-#               (E:\), at line 61.
-#
-# NOTE - THE CONFIGURATION BLOCK BELOW IS SET FOR TESTING, NOT PRODUCTION.
-# states is c("MA", "RI") rather than all nine, and n_simulations is 3. It
-# also RE-DECLARES n_simulations, overwriting whatever "R code wrapper.R" set
-# (10) - so sourcing this file silently changes that object for anything that
-# runs afterwards in the same session. iterative_input_data_cd is likewise
-# re-hardcoded here to an absolute E: path, overriding the caller's value.
-# Left as-is per this session's scope.
 #
 # Duplicated helpers: safe_divide(), calc_prob_trip() and parse_date_any() are
 # verbatim copies of the definitions in calibrate_rec_catch0_optimized.R /
-# calibrate_rec_catch1_final.R. Only the helpers new to this file are
+# calibrate_rec_catch1.R. Only the helpers new to this file are
 # documented below.
 ################################################################################
 ################################################################################
 
 # Efficient projection-year simulation for summer flounder, black sea bass, and scup.
-# Designed to mirror calibrate_rec_catch1_final.R while carrying forward calibrated
-# reallocation parameters from calibrated_model_stats.csv.
+# Designed to mirror calibrate_rec_catch1.R while carrying forward calibrated
+# reallocation parameters from calibrated_model_stats.fst.
 
 # Three parts to this file:
   # globals
@@ -60,18 +49,20 @@ library(fst)
 library(readr)
 
 ## Globals
-iterative_input_data_cd="E:/Lou_projects/flukeRDM/flukeRDM_iterative_data"
+code_cd=here("Code", "sim")
 
-n_choice_occ_cd<-file.path(iterative_input_data_cd, "archive/n_choice_occasion")
-base_outcome_cd<-file.path(iterative_input_data_cd, "archive/base_outcomes")
-misc_cd<-file.path(iterative_input_data_cd, "archive/miscellaneous")
-proj_catch_cd<-file.path(iterative_input_data_cd, "archive/proj_catch_draws")
+final_process_data_cd="E:/Lou_projects/flukeRDM/2028_mgt_cycle" ## add root to data directory
+final_process_outcomes_cd=file.path(final_process_data_cd, "base_outcomes")
+final_process_choice_occasions_cd=file.path(final_process_data_cd,"n_choice_ocassions")
+final_process_misc_cd=file.path(final_process_data_cd,"miscellaneous")
+final_process_calib_catch_cd=file.path(final_process_data_cd,"calib_catch_draws")
+final_process_project_catch_cd=file.path(final_process_data_cd,"proj_catch_draws")
 
 
-states <- c("MA", "RI")
+states <- if (exists("statez", inherits = TRUE)) statez else c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
 modes = c("sh", "pr", "fh") 
-ndraws<-50
-n_simulations<-3
+ndraws <- if (exists("n_draws", inherits = TRUE)) n_draws else 50L
+if (!exists("n_simulations", inherits = TRUE)) stop("Define n_simulations before sourcing the projection script.")
 draws<-1:n_simulations
 n_sims<-max(draws)
 
@@ -136,7 +127,6 @@ months_dt <- data.table::data.table(month = 1:12)
 #'   per-draw loop does not re-read them. This hoisting is the main
 #'   performance difference between this version and the archived predecessor
 #'   in Code/archive.
-#' @param iterative_input_data_cd Directory holding simulation-generated data.
 #' @param states State codes to retain; NULL keeps all.
 #' @param draws Draw numbers to retain.
 #' @param size_lookup_file Filename of the projected catch-at-length table.
@@ -145,12 +135,11 @@ months_dt <- data.table::data.table(month = 1:12)
 #' @param lw_file Path to the length-weight conversion table.
 #' @return A named list of the shared tables, to be passed into the per-draw
 #'   projection.
-read_projection_common_inputs <- function(iterative_input_data_cd,
-                                          states,
+read_projection_common_inputs <- function(states,
                                           draws,
-                                          size_lookup_file = "projected_catch_at_length.csv",
-                                          calib_file = file.path(misc_cd, "calibrated_model_stats.fst"),
-                                          lw_file = file.path(misc_cd, "L_W_Conversion.csv")) {
+                                          size_lookup_file = "baseline_catch_at_length_state.csv",
+                                          calib_file = file.path(final_process_misc_cd, "calibrated_model_stats.fst"),
+                                          lw_file = file.path(final_process_misc_cd, "L_W_Conversion.csv")) {
   
   l_w_conversion <- data.table::as.data.table(readr::read_csv(lw_file, show_col_types = FALSE))
   if (!is.null(states) && "state" %in% names(l_w_conversion)) {
@@ -159,7 +148,7 @@ read_projection_common_inputs <- function(iterative_input_data_cd,
   data.table::setkeyv(l_w_conversion, intersect(c("state", "species", "month"), names(l_w_conversion)))
   
   size_lookup <- data.table::as.data.table(
-    readr::read_csv(file.path(misc_cd, size_lookup_file), show_col_types = FALSE))
+    readr::read_csv(file.path(final_process_misc_cd, size_lookup_file), show_col_types = FALSE))
   
   if (!"mode" %in% names(size_lookup)) size_lookup[, mode := NA_character_]
   size_lookup <- size_lookup[!is.na(fitted_prob), .(state, draw, species, mode, fitted_prob, length)]
@@ -200,7 +189,7 @@ read_projection_common_inputs <- function(iterative_input_data_cd,
     lapply(states, function(st) {
       dt <- data.table::as.data.table(
         fst::read_fst(file.path(
-          misc_cd,
+          final_process_misc_cd,
           paste0("directed_trips_calibration_", st, ".fst"))))
       dt[, state := st]
       dt}),
@@ -212,7 +201,7 @@ read_projection_common_inputs <- function(iterative_input_data_cd,
       dt <- data.table::as.data.table(
         readr::read_csv(
           file.path(
-            misc_cd,
+            final_process_misc_cd,
             paste0("proj_year_calendar_adjustments_", st, ".csv")),
           show_col_types = FALSE))
       dt[state == st]
@@ -416,7 +405,6 @@ species_config <- data.table(
 ### Final Projection call
 
 common_inputs <- read_projection_common_inputs(
-  iterative_input_data_cd = iterative_input_data_cd,
   states = states,
   draws = draws)
 
@@ -434,10 +422,19 @@ system.time({
     # Projection catch draws.
     catch_data <- data.table::as.data.table(
       fst::read_fst(file.path(
-        proj_catch_cd,
+        final_process_calib_catch_cd,
+        paste0("calib_catch_draws_", st, "_", dr, ".fst")
+      ))
+    )
+    
+    catch_data2 <- data.table::as.data.table(
+      fst::read_fst(file.path(
+        final_process_project_catch_cd,
         paste0("proj_catch_draws_", st, "_", dr, ".fst")
       ))
     )
+    
+    final_process_outcomes_cd
     data.table::setkey(directed_trips, mode, date_parsed)
     data.table::setkey(catch_data, mode, date_parsed)
     
@@ -462,11 +459,11 @@ system.time({
     nchoice_list <- list()
     for (md in modes) {
       base_list[[md]] <- fst::read_fst(
-        file.path(base_outcome_cd,
+        file.path(final_process_outcomes_cd,
                   paste0("base_outcomes_", st, "_", md, "_", dr, ".fst")))
       
       nchoice_list[[md]] <- fst::read_fst(
-        file.path(n_choice_occ_cd,
+        file.path(final_process_choice_occasions_cd,
                   paste0("n_choice_occasions_", st, "_", md, "_", dr, ".fst")))
     }
     
@@ -498,10 +495,10 @@ system.time({
         
         if (nrow(size_dt) == 0L) size_dt <- size_lookup[species == cfg$species]
         calib_row <- calib[mode == md & species == cfg$species]
-        if (!nrow(calib_row)) {
-          calib_row <- data.table::data.table(rel_to_keep = 0, keep_to_rel = 0, p_rel_to_keep = 0,
-                                              p_keep_to_rel = 0, all_keep_to_rel = 0)
-        }
+        if (nrow(calib_row) != 1L) stop("Expected one calibration row for ", st, "/", md,
+                                        "/draw ", dr, "/", cfg$species, "; found ", nrow(calib_row))
+        if (!is.finite(floor_val)) stop("Missing calibration floor for ", st, "/", md,
+                                         "/draw ", dr, "/", cfg$species)
         kk <- kk + 1L
         # catch_md is already mode-specific, so no mode_value scan needed here.
         sim_results[[kk]] <- simulate_species_project(
@@ -560,29 +557,29 @@ system.time({
     trip_data[, `:=`(
       v0_trip =
         beta_sqrt_sf_keep * sqrt(tot_keep_sf_util_base) +
-        beta_sqrt_sf_release * sqrt(tot_rel_sf_util_base) +
+        beta_sqrt_sf_rel * sqrt(tot_rel_sf_util_base) +
         beta_sqrt_bsb_keep * sqrt(tot_keep_bsb_util_base) +
         beta_sqrt_bsb_release * sqrt(tot_rel_bsb_util_base) +
         beta_sqrt_sf_bsb_keep * (sqrt(tot_keep_sf_util_base) * sqrt(tot_keep_bsb_util_base)) +
         beta_sqrt_scup_catch * sqrt(tot_cat_scup_base) +
-        beta_cost * cost,
+        beta_cost * cost_sim,
       
       vA_trip =
         beta_sqrt_sf_keep * sqrt(tot_keep_sf_util) +
-        beta_sqrt_sf_release * sqrt(tot_rel_sf_util) +
+        beta_sqrt_sf_rel * sqrt(tot_rel_sf_util) +
         beta_sqrt_bsb_keep * sqrt(tot_keep_bsb_util) +
         beta_sqrt_bsb_release * sqrt(tot_rel_bsb_util) +
         beta_sqrt_sf_bsb_keep * (sqrt(tot_keep_sf_util) * sqrt(tot_keep_bsb_util)) +
         beta_sqrt_scup_catch * sqrt(tot_cat_scup_new) +
-        beta_cost * cost,
+        beta_cost * cost_sim,
       
       v_optout = beta_opt_out + beta_opt_out_age * age + beta_opt_out_avidity * total_trips_12)]
     
     mean_drop_cols <- intersect(
       c("beta_opt_out", "beta_opt_out_age", "beta_opt_out_avidity",
         "beta_sqrt_bsb_keep", "beta_sqrt_bsb_release", "beta_sqrt_scup_catch",
-        "beta_sqrt_sf_bsb_keep", "beta_sqrt_sf_keep", "beta_sqrt_sf_release",
-        "age", "cost", "total_trips_12", "catch_draw"),
+        "beta_sqrt_sf_bsb_keep", "beta_sqrt_sf_keep", "beta_sqrt_sf_rel",
+        "age", "cost_sim", "total_trips_12", "catch_draw"),
       names(trip_data))
     
     mean_vars <- setdiff(
@@ -639,10 +636,9 @@ system.time({
     if (length(drop_cols)) calendar_adjustments[, (drop_cols) := NULL]
 
     mean_trip_data <- merge(mean_trip_data, calendar_adjustments, by = c("mode", "month"), all.x = TRUE)
-    # mean_trip_data <- mean_trip_data %>% 
-    #   dplyr::mutate(expansion_factor=1)
-    
-    #mean_trip_data[is.na(expansion_factor), expansion_factor := 1]
+     mean_trip_data <- mean_trip_data %>%
+       dplyr::mutate(expansion_factor=1)
+
     mean_trip_data[is.na(n_choice_occasions), n_choice_occasions := 0]
     mean_trip_data[, expand := (n_choice_occasions * expansion_factor) / ndraws]
     
@@ -678,7 +674,7 @@ system.time({
 prediction_draws <- dplyr::bind_rows(predictions_list)
 
 # Final outputting of results - merge to baseline year data and compute differences
-calib_file = file.path(misc_cd, "calibrated_model_stats.fst")
+calib_file = file.path(final_process_misc_cd, "calibrated_model_stats.fst")
 calib_read <- data.table::as.data.table(fst::read_fst(calib_file))
 calib <- calib_read %>% dplyr::filter(state %in% states & draw<=n_sims)
 

@@ -126,21 +126,28 @@ source(here("Code","helpers","naa_helpers.R"))
 
 
 code_cd=here("Code", "sim")
-input_data_cd="C:/Users/andrew.carr-harris/Desktop/MRIP_data_2025"
-iterative_input_data_cd="E:/Lou_projects/flukeRDM/flukeRDM_iterative_data"
 
-# Number of model iterations. Match Stata's $ndraws
+final_process_data_cd="E:/Lou_projects/flukeRDM/2028_mgt_cycle" ## add root to data directory
+final_process_outcomes_cd=file.path(final_process_data_cd, "base_outcomes")
+final_process_choice_occasions_cd=file.path(final_process_data_cd,"n_choice_ocassions")
+final_process_misc_cd=file.path(final_process_data_cd,"miscellaneous")
+final_process_calib_catch_cd=file.path(final_process_data_cd,"calib_catch_draws")
+final_process_project_catch_cd=file.path(final_process_data_cd,"proj_catch_draws")
+
+
+# Number of model iterations. Match Stata's $ndraws - UNCOMMENT IF CALLED FROM STATA
 # (model_wrapper.do) using the argument in Stata call
 # Define arguments
-args <- commandArgs(trailingOnly = TRUE)
-if (length(args) != 1) {
-  stop("Error: This script requires exactly one argument.", call. = FALSE)
-}
-n_simulations  <- as.numeric(args[1]) # Number of model iterations.
+# args <- commandArgs(trailingOnly = TRUE)
+# if (length(args) != 1) {
+#   stop("Error: This script requires exactly one argument.", call. = FALSE)
+# }
+# n_simulations  <- as.numeric(args[1]) # Number of model iterations.
+# 
+# # Show them, just in case.
+# cat("Number of model iterations selected:", n_simulations, "\n")
 
-# Show them, just in case.
-cat("Number of model iterations selected:", n_simulations, "\n")
-
+n_simulations  <- 3 ## HARDCODED number of model iterations
 
 
 
@@ -181,14 +188,13 @@ statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
 message("R code wrapper.R: converting calibration inputs to .fst for ", length(statez), " states x ", n_simulations, " draws. This is I/O bound and can take a long time on first run.")
 
 for(s in statez) {
+  dtrip0<-read.csv(file.path(final_process_misc_cd, paste0("directed_trips_calibration_", s,".csv")))
+  write_fst(dtrip0, file.path(final_process_misc_cd, paste0("directed_trips_calibration_", s,".fst")))
   
-  dtrip0<-read.csv(paste0("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/directed_trips_calibration/directed_trips_calibration_", s,".csv"))
-  write_fst(dtrip0, paste0("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/directed_trips_calibration/directed_trips_calibration_", s,".fst"))
-
    for(i in 1:n_simulations) {
-   catch<-read_dta(paste0("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/calib_catch_draws/calib_catch_draws_",s, "_", i,".dta"))
-   write_fst(catch, paste0("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/calib_catch_draws/calib_catch_draws_",s, "_", i,".fst"))
-
+   catch<-read_dta(file.path(final_process_calib_catch_cd,paste0("calib_catch_draws_",s, "_", i,".dta")))
+   write_fst(catch, file.path(final_process_calib_catch_cd,paste0("calib_catch_draws_",s, "_", i,".fst")))
+   
 }
 }
 
@@ -207,7 +213,7 @@ for(s in statez) {
 
 message("R code wrapper.R: STEP 1 of 3 - running the calibration0 algorithm. This is a long-running simulation step.")
 
-source(file.path(code_cd,"calibrate_rec_catch0_optimized.R"))
+source(file.path(code_cd,"calibrate_rec_catch0.R"))
 
 message("R code wrapper.R: STEP 1 complete.")
 
@@ -251,16 +257,16 @@ message("R code wrapper.R: pre-parsing date columns in the directed-trips files.
 for(s in statez) {
   dtrip <- data.table::as.data.table(
     fst::read_fst(file.path(
-      iterative_input_data_cd,
-      paste0("archive/directed_trips_calibration/directed_trips_calibration_", s, ".fst")))) %>% 
+      final_process_misc_cd,
+      paste0("directed_trips_calibration_", s, ".fst")))) %>% 
     dplyr::mutate(date_parsed = parse_date_any(date), 
                   date_parsed_y2 = parse_date_any(day_y2),
                   month=data.table::month(date_parsed)) %>% 
     dplyr::select(-date, -day_y2)
   
   write_fst(dtrip, file.path(
-    iterative_input_data_cd,
-    paste0("archive/directed_trips_calibration/directed_trips_calibration_", s, ".fst")))
+    final_process_misc_cd,
+    paste0("directed_trips_calibration_", s, ".fst")))
 }
 
 
@@ -268,25 +274,26 @@ statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
 for(s in statez) {
   for(i in 1:n_simulations) {
 
-    catch0<-read_fst(paste0("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/calib_catch_draws/calib_catch_draws_",s, "_", i,".fst")) %>%
+    catch0<-read_fst(file.path(final_process_calib_catch_cd, paste0("calib_catch_draws_",s, "_", i,".fst"))) %>%
       dplyr::mutate(date_parsed = parse_date_any(date),
                     month=data.table::month(date_parsed)) %>%
-      dplyr::select(-date_num, -date)
-    write_fst(catch0, paste0("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/calib_catch_draws/calib_catch_draws_",s, "_", i,".fst"))
+      dplyr::select(-date)
+    write_fst(catch0, file.path(final_process_calib_catch_cd, paste0("calib_catch_draws_",s, "_", i,".fst")))
     
   }
 }
 
 message("R code wrapper.R: STEP 2 of 3 - running the calibration reallocation routine. This is the longest step in the pipeline.")
 
-source(file.path(code_cd,"calibration_routine_final.R")) # this script calls "calibrate_rec_catch1_final.R"
+source(file.path(code_cd,"calibration_routine.R")) # this script calls "calibrate_rec_catch1.R"
 
 message("R code wrapper.R: STEP 2 complete.")
 
+
 # Output files:
-  # file.path(iterative_input_data_cd, paste0("archive/miscellaneous/calibrated_model_stats.fst")))
-  # n_choice_occasions_ST_MD_DRAW.fst -  choice occasions to simulate in projection
-  # base_outcomes_ST_MD_DRAW-  baseline trip outcomes
+  # file.path(final_process_misc_cd, calibrated_model_stats.fst"))
+  # file.path(final_process_choice_occasions_cd, "n_choice_occasions_ST_MD_DRAW.fst"):  number of choice occasions to simulate in projection
+  # file.path(final_process_outcomes_cd, "base_outcomes_ST_MD_DRAW"): baseline trip outcomes
 
 
 ################################################################################
@@ -306,11 +313,11 @@ statez <- c("MA", "RI", "CT", "NY", "NJ", "DE", "MD", "VA", "NC")
 
 for(s in statez) {
   for(i in 1:n_simulations) {
-    catch<-read_dta(paste0("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/proj_catch_draws/proj_catch_draws_",s, "_", i,".dta")) %>%
+    catch<-read_dta(file.path(final_process_project_catch_cd, paste0("proj_catch_draws_",s, "_", i,".dta"))) %>%
       dplyr::mutate(date_parsed = parse_date_any(date),
                     month=data.table::month(date_parsed)) %>%
       dplyr::select(-date_num, -date)
-    write_fst(catch, paste0("E:/Lou_projects/flukeRDM/flukeRDM_iterative_data/archive/proj_catch_draws/proj_catch_draws_",s, "_", i,".fst"))
+    write_fst(catch, file.path(final_process_project_catch_cd, paste0("proj_catch_draws_",s, "_", i,".fst")))
     
   }
 }
@@ -327,7 +334,7 @@ for(s in statez) {
 
 message("R code wrapper.R: STEP 3 of 3 - running the projection algorithm.")
 
-source(file.path(code_cd, "predict_rec_catch_final.R"))
+source(file.path(code_cd, "predict_rec_catch.R"))
 
 message("R code wrapper.R: STEP 3 complete. R pipeline finished.")
 
