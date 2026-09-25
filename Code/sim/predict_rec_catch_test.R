@@ -16,7 +16,7 @@
 #               behavior departs from strict compliance in the base year; the
 #               projection assumes that same departure persists under the new
 #               regulations, rather than re-estimating it.
-# Inputs:       proj_catch_at_length_state.csv, calibrated_model_stats.fst,
+# Inputs:       projected_catch_at_length_state.csv, calibrated_model_stats.fst,
 #               L_W_Conversion.csv, proj_catch_draws_<ST>_<i>.fst,
 #               base_outcomes_<ST>_<MODE>_<DRAW>.fst,
 #               n_choice_occasions_<ST>_<MODE>_<DRAW>.fst
@@ -24,18 +24,18 @@
 # Dependencies: n_simulations from the calling wrapper; inputs reside under
 #               final_process_data_cd in the subdirectories defined below.
 # Pipeline:     Last of the three R steps. Deliberately mirrors
-#               calibrate_rec_catch1_final.R so that baseline and projection
+#               calibrate_rec_catch1.R so that baseline and projection
 #               are computed the same way and their difference is meaningful.
 #
 # Duplicated helpers: safe_divide(), calc_prob_trip() and parse_date_any() are
 # verbatim copies of the definitions in calibrate_rec_catch0_optimized.R /
-# calibrate_rec_catch1_final.R. Only the helpers new to this file are
+# calibrate_rec_catch1.R. Only the helpers new to this file are
 # documented below.
 ################################################################################
 ################################################################################
 
 # Efficient projection-year simulation for summer flounder, black sea bass, and scup.
-# Designed to mirror calibrate_rec_catch1_final.R while carrying forward calibrated
+# Designed to mirror calibrate_rec_catch1.R while carrying forward calibrated
 # reallocation parameters from calibrated_model_stats.fst.
 
 # Three parts to this file:
@@ -137,7 +137,7 @@ months_dt <- data.table::data.table(month = 1:12)
 #'   projection.
 read_projection_common_inputs <- function(states,
                                           draws,
-                                          size_lookup_file = "proj_catch_at_length_state.csv",
+                                          size_lookup_file = "baseline_catch_at_length_state.csv",
                                           calib_file = file.path(final_process_misc_cd, "calibrated_model_stats.fst"),
                                           lw_file = file.path(final_process_misc_cd, "L_W_Conversion.csv")) {
   
@@ -252,6 +252,7 @@ simulate_species_project <- function(catch_dt,
   
   if (!is.null(mode_value)) catch_dt <- catch_dt[mode == mode_value]
 
+  # Match calibration: retain trips with zero catch for this species.
   if (anyNA(catch_dt[[cfg$catch_col]]) || any(catch_dt[[cfg$catch_col]] < 0))
     stop("Invalid ", sp, " catch counts in projection input")
   zero_dt <- data.table::copy(catch_dt[get(cfg$catch_col) == 0, ..key_cols])
@@ -266,7 +267,7 @@ simulate_species_project <- function(catch_dt,
   
   if (nrow(pos_dt) == 0L) return(list(trip = zero_dt))
   if (nrow(size_dt) == 0L || sum(size_dt$fitted_prob, na.rm = TRUE) <= 0)
-    stop("Positive ", sp, " catch but no usable projected length distribution")
+    stop("Positive ", sp, " catch but no usable length distribution")
   
   setnames(pos_dt,
            old = c(cfg$catch_col, cfg$bag_col, cfg$min_col),
@@ -424,20 +425,26 @@ system.time({
   for (st in states){
     for (dr in draws){
     
-    # State-level directed trips, filtered to draw.
-    directed_trips <- common_inputs$directed_trips[draw == dr & state==st]
-    
-    # Projection catch draws.
-    catch_data <- data.table::as.data.table(
-      fst::read_fst(file.path(
-        final_process_project_catch_cd,
-        paste0("proj_catch_draws_", st, "_", dr, ".fst")
-      ))
-    )
-    data.table::setkey(directed_trips, mode, date_parsed)
-    data.table::setkey(catch_data, mode, date_parsed)
-    
-    catch_data <- directed_trips[catch_data]
+    # Baseline test: use the same catch draw and regulation columns as calibration.
+    # Preference parameters, cost and demographics come from base_outcomes below.
+    directed_trips <- common_inputs$directed_trips[
+      draw == dr & state == st,
+      .(mode, date_parsed, dtrip, bsb_bag, bsb_min, fluke_bag, fluke_min, scup_bag, scup_min)
+    ]
+    if (anyDuplicated(directed_trips, by = c("mode", "date_parsed")))
+      stop("Duplicate directed-trip regulations for ", st, " draw ", dr)
+
+    catch_draw_dt <- data.table::as.data.table(fst::read_fst(file.path(
+      final_process_calib_catch_cd, paste0("calib_catch_draws_", st, "_", dr, ".fst")
+    )))
+    catch_cols <- c("date_parsed", "mode", "tripid", "catch_draw", "sf_cat", "bsb_cat", "scup_cat")
+    missing_cols <- setdiff(catch_cols, names(catch_draw_dt))
+    if (length(missing_cols)) stop("Missing calibration catch columns: ", paste(missing_cols, collapse = ", "))
+    catch_data <- merge(catch_draw_dt[, ..catch_cols], directed_trips,
+                        by = c("mode", "date_parsed"), all.x = TRUE, sort = FALSE)
+    if (anyNA(catch_data$dtrip) || anyNA(catch_data$fluke_bag) ||
+        anyNA(catch_data$bsb_bag) || anyNA(catch_data$scup_bag))
+      stop("Calibration catch draw has dates without complete regulations: ", st, " draw ", dr)
     
     # Common input filtering only; do not reread.
     size_lookup <- common_inputs$size_lookup[
@@ -468,13 +475,6 @@ system.time({
     
     base_outcomes <- data.table::rbindlist(base_list, fill = TRUE, use.names = TRUE)
     n_choice_occasions <- data.table::rbindlist(nchoice_list, fill = TRUE, use.names = TRUE)
-
-    key_cols <- c("date_parsed", "mode", "tripid", "catch_draw")
-    missing_base_keys <- data.table::fsetdiff(
-      unique(catch_data[, ..key_cols]), unique(base_outcomes[, ..key_cols]))
-    if (nrow(missing_base_keys)) stop("Projection has ", nrow(missing_base_keys),
-      " trip/catch-draw keys without baseline outcomes for ", st, " draw ", dr,
-      "; trip_data[base_outcomes] would discard them.")
     
     util_cols <- grep("^tot_(keep|rel)_.*_util$", names(base_outcomes), value = TRUE)
     if (length(util_cols)) data.table::setnames(base_outcomes, old = util_cols, new = paste0(util_cols, "_base"))
@@ -642,9 +642,9 @@ system.time({
     if (length(drop_cols)) calendar_adjustments[, (drop_cols) := NULL]
 
     mean_trip_data <- merge(mean_trip_data, calendar_adjustments, by = c("mode", "month"), all.x = TRUE)
-    # mean_trip_data <- mean_trip_data %>% 
-    #   dplyr::mutate(expansion_factor=1)
-    
+     mean_trip_data <- mean_trip_data %>%
+       dplyr::mutate(expansion_factor=1)
+
     mean_trip_data[is.na(n_choice_occasions), n_choice_occasions := 0]
     mean_trip_data[, expand := (n_choice_occasions * expansion_factor) / ndraws]
     
@@ -795,14 +795,14 @@ calib_long[, metric := data.table::fcase(
 # 6. Merge projected + baseline
 # -----------------------------
 
-final_compare1 <- merge(
+final_compare <- merge(
   prediction_long2,
   calib_long,
   by = c("state", "mode", "iteration", "species", "metric"),
   all.x = TRUE)
 
-final_compare1 <- data.table::rbindlist(
-  list(final_compare1, trip_compare),
+final_compare <- data.table::rbindlist(
+  list(final_compare, trip_compare),
   use.names = TRUE,
   fill = TRUE)
 
@@ -814,7 +814,7 @@ dm_rates <- data.table::data.table(
 
 # Pull release rows and convert them to dead discard rows
 dead_discards <- merge(
-  final_compare1[metric %in% c("discards (#s)", "discards (lbs.)")],
+  final_compare[metric %in% c("discards (#s)", "discards (lbs.)")],
   dm_rates,
   by = "species",
   all.x = TRUE
@@ -833,23 +833,23 @@ dead_discards[, `:=`(
 dead_discards[, dm_rate := NULL]
 
 # Append to final_compare
-final_compare1 <- data.table::rbindlist(
-  list(final_compare1, dead_discards),
+final_compare <- data.table::rbindlist(
+  list(final_compare, dead_discards),
   use.names = TRUE,
   fill = TRUE
 )
 
-final_compare1[, difference := projected_value - baseline_value]
-final_compare1[, pct_difference := ((projected_value - baseline_value)/baseline_value)*100]
-final_compare1[, difference := round(difference, 1)]
-final_compare1[, pct_difference := round(pct_difference, 1)]
-final_compare1[, projected_value := round(projected_value, 0)]
-final_compare1[, baseline_value := round(baseline_value, 0)]
+final_compare[, difference := projected_value - baseline_value]
+final_compare[, pct_difference := ((projected_value - baseline_value)/baseline_value)*100]
+final_compare[, difference := round(difference, 1)]
+final_compare[, pct_difference := round(pct_difference, 1)]
+final_compare[, projected_value := round(projected_value, 0)]
+final_compare[, baseline_value := round(baseline_value, 0)]
 
-data.table::setcolorder(final_compare1,
+data.table::setcolorder(final_compare,
   c("iteration", "state", "mode", "species", "metric",
     "baseline_value", "projected_value",
     "difference", "pct_difference"))
 
-data.table::setorder(final_compare1, iteration, state, mode, species, metric)
+data.table::setorder(final_compare, iteration, state, mode, species, metric)
 
