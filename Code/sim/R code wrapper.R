@@ -328,9 +328,6 @@ for(s in statez) {
 # fish discarded as harvest or vice versa in proportion to how they were allocated in the calibration. 
 ################################################################################
 ################################################################################
-# Section F: STEP 3 - project catch under the alternative regulations
-################################################################################
-################################################################################
 
 message("R code wrapper.R: STEP 3 of 3 - running the projection algorithm.")
 
