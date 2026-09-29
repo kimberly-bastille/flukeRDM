@@ -243,16 +243,16 @@ loc assemblemriplists = 0		 			// deal with casing MRIP data
 loc directed_trips_calibration = 0			// Estimate Directed Trips 
 loc survey_trip_costs = 0					// Create Distributions of costs per trip (run 1x)
 loc estimate_angler_preferences = 0			// Create draw of angler preference parameters (run 1x)
-loc catch_per_trip_calibration_part1 = 1	// Part 1 of catch per trip
+loc catch_per_trip_calib_part1 = 1			// Part 1 of catch per trip
 loc copula_modeling_calibration = 0			// Copula model in R
-loc calibration_catch_per_trip_part2 = 0	// Part 2 of catch per trip
-loc compare_calibration_data_to_MRIP = 0	// compare calibration output to MRIP
+loc calib_catch_per_trip_part2 = 0			// Part 2 of catch per trip
+loc compare_calib_data_to_MRIP = 0			// compare calibration output to MRIP
 loc calibration_catch_at_length=0			// Generate baseline-year catch-at-length
 loc projected_catch_at_length=0				// Generate projection-year catch-at-length
 loc catch_per_trip_project_part1=0      	// Part 1 of PROJECTED catch per trip
 loc copula_modeling_projection=0      		// Projection part of copula in R 
-loc catch_per_trip_projection_part2=0       // Part 2 of PROJECTED catch per trip
-loc compare_projection_data_to_MRIP=0       // Compare projection data to MRIP
+loc catch_per_trip_proj_part2=0      		// Part 2 of PROJECTED catch per trip
+loc compare_proj_data_to_MRIP=0       		// Compare projection data to MRIP
 loc Rcodewrapper =0 						// Run calibration /sim/R wrapper.R  Will Not run until the hardcoded paths are fixed.
 
 /********************* Dashboard related *************************************/
@@ -369,7 +369,7 @@ if `estimate_angler_preferences' {
 * 5) Estimate catch-per-trip at the month and mode level
 		// a) compute mean catch-per-trip and standard error, imputing standard errors from historcial data when they are missing. 
 
-if `catch_per_trip_calibration_part1' {
+if `catch_per_trip_calib_part1' {
 	di "Estimate catch-per-trip at the month and mode level"
 	do "$input_code_cd\catch_per_trip_calibration_part1.do"
 	di "catch-per-trip at the month and mode level Done"
@@ -387,7 +387,7 @@ if `copula_modeling_calibration' {
 
 		// c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
 
-if `calibration_catch_per_trip_part2' {
+if `calib_catch_per_trip_part2' {
     	di "Generating estimates of simulated total harvest based on random draws"
 		do "$input_code_cd\calibration_catch_per_trip_part2.do"
     	di "Estimates of simulated total harvest Done"
@@ -396,7 +396,7 @@ if `calibration_catch_per_trip_part2' {
 
 // 6) compare calibration output to MRIP, and retain total simulated harvest and discards to apply to the baseline catch-at-length distribution
 
-if `compare_calibration_data_to_MRIP' {
+if `compare_calib_data_to_MRIP' {
     	di "Comparing calibration output to MRIP"
 		do "$input_code_cd\compare_calibration_data_to_MRIP.do" 
       	di "Comparison of calibration output to MRIP done"
@@ -437,12 +437,12 @@ if `copula_modeling_projection'{
         di "Copula in R estimated"
 }
 
-if `catch_per_trip_projection_part2'{
+if `catch_per_trip_proj_part2'{
 
 		//c) generate estimates of simulated total harvest based on random draws of catch-per-trip and directed trips
 		do "$input_code_cd\catch_per_trip_projection_part2.do"
 }
-if `compare_projection_data_to_MRIP'{
+if `compare_proj_data_to_MRIP'{
 
 		//d) compare estimates of mean projected catch to MRIP data to ensure consistency and remove extraneous columns from projected catch draw data
 		do "$input_code_cd\compare_projection_data_to_MRIP.do"
