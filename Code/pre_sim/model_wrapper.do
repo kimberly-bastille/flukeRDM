@@ -236,7 +236,6 @@ global seed 03211990
 **********************************************************************
 
 // Control which modules to run (set to 0 to skip)
-**# Bookmark #1
 loc get_assessment_from_gdrive = 0		 	// Pull Assessment data
 loc get_mrip_oracle= 0			 			// Pull MRIP data
 loc processMRIP = 0		 					// deal with casing MRIP data
