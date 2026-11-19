@@ -30,8 +30,7 @@ Dependencies: Google drive mounted
 	* Min-Yang processes the historical numbers-at-age data and makes projections, and stores his output in Google Drive
 	* Here I pull that data from Google Drive (using the Desktop app file path) and save it with a generic name in a local folder 
 
-local date: display %td_CCYY_NN_DD date(c(current_date), "DMY")
-local today_date_string = subinstr(trim("`date'"), " " , "_", .)
+local today_date_string: display %td_CCYY-NN-DD date(c(current_date), "DMY")
 local vintage_string `today_date_string'
 
 
