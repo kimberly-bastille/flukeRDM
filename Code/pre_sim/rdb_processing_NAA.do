@@ -101,6 +101,7 @@ gen species_itis =172735
 gen units = "Thousands"
 gen region  = "CST"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 
@@ -129,6 +130,7 @@ gen species_itis =172735
 gen units = "Thousands"
 gen region  = "CST"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 assert year==2026
@@ -167,6 +169,7 @@ gen species_itis =172735
 gen units = "Thousands"
 gen region  = "CST"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 assert year==2024
@@ -196,6 +199,7 @@ gen species_itis =169182
 gen units = "Thousands"
 gen region  = "CST"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop
 assert year==2026 
@@ -230,6 +234,7 @@ gen stock_abbrev = "SOUTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 save "$misc_data_cd/`BSB_South_historical_filename'", replace
 
@@ -255,6 +260,7 @@ gen stock_abbrev = "NORTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 save "$misc_data_cd/`BSB_North_historical_filename'", replace
 
@@ -283,6 +289,7 @@ gen stock_abbrev = "SOUTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 capture drop year
@@ -311,6 +318,7 @@ gen stock_abbrev = "NORTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 capture drop year
