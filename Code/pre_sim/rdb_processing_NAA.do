@@ -30,8 +30,7 @@ Dependencies: Google drive mounted
 	* Min-Yang processes the historical numbers-at-age data and makes projections, and stores his output in Google Drive
 	* Here I pull that data from Google Drive (using the Desktop app file path) and save it with a generic name in a local folder 
 
-local date: display %td_CCYY_NN_DD date(c(current_date), "DMY")
-local today_date_string = subinstr(trim("`date'"), " " , "_", .)
+local today_date_string: display %td_CCYY-NN-DD date(c(current_date), "DMY")
 local vintage_string `today_date_string'
 
 
@@ -102,6 +101,7 @@ gen species_itis =172735
 gen units = "Thousands"
 gen region  = "CST"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 
@@ -130,6 +130,7 @@ gen species_itis =172735
 gen units = "Thousands"
 gen region  = "CST"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 assert year==2026
@@ -168,6 +169,7 @@ gen species_itis =172735
 gen units = "Thousands"
 gen region  = "CST"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 assert year==2024
@@ -197,6 +199,7 @@ gen species_itis =169182
 gen units = "Thousands"
 gen region  = "CST"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop
 assert year==2026 
@@ -231,6 +234,7 @@ gen stock_abbrev = "SOUTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 save "$misc_data_cd/`BSB_South_historical_filename'", replace
 
@@ -256,6 +260,7 @@ gen stock_abbrev = "NORTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 save "$misc_data_cd/`BSB_North_historical_filename'", replace
 
@@ -284,6 +289,7 @@ gen stock_abbrev = "SOUTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 capture drop year
@@ -312,6 +318,7 @@ gen stock_abbrev = "NORTH"
 gen species_itis =167687
 gen units = "Thousands"
 gen str data_version= "`vintage_string'"
+gen management_cycle= 2028
 
 duplicates drop 
 capture drop year
