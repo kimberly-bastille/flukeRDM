@@ -245,6 +245,7 @@ qui twoway (rcap mrip_ul mrip_ll my_dom_id_mrip if domain=="`d'", color(blue)  )
 * Combine mean catch-per-trip graphs that exist in memory
 *------------------------------------------------------------
 local states MA RI CT NY NJ DE MD VA NC
+
 local domains bsb_keep sf_keep scup_keep bsb_rel sf_rel scup_rel
 
 foreach s of local states {
@@ -270,19 +271,13 @@ foreach s of local states {
     * Only combine/export when at least one graph exists
     if `"`graph_list'"' != "" {
 
-        grc1leg `graph_list', ///
-            cols(3) ///
-            title("Mean catch-per-trip, MRIP vs. simulated estimates `s'", ///
-                  size(small)) ///
-            name(mean_catch_`s', replace)
+        grc1leg `graph_list',  cols(3) title("Mean catch-per-trip, MRIP vs. simulated estimates `s'",  size(small)) ///
+            name(mean_catch_`s', replace) xsize(12) ysize(8) 
 
-        graph export ///
-            "$figure_cd/mean_catch_MRIP_simulated_`s'.png", ///
-            as(png) replace
+        graph export "$figure_cd/mean_catch_MRIP_simulated_`s'.png", as(png) replace width(3000) 
     }
     else {
-        display as error ///
-            "No mean catch-per-trip graphs exist for state `s'; no combined graph exported."
+        display as error "No mean catch-per-trip graphs exist for state `s'; no combined graph exported."
     }
 }
 
@@ -462,19 +457,14 @@ foreach s of local states {
 
 if `"`graph_list'"' != "" {
 
-    grc1leg `graph_list', ///
-        cols(3) ///
-        title("Directed trips, MRIP vs. simulated estimates", ///
-              size(small)) ///
-        name(dtrip_all_states, replace)
+    grc1leg `graph_list',  cols(3) title("Directed trips, MRIP vs. simulated estimates", size(small)) ///
+        name(dtrip_all_states, replace) xsize(12) ysize(8) 
 
     graph export ///
-        "$figure_cd/dtrip_wave_MRIP_simulated_all_states.png", ///
-        as(png) replace
+        "$figure_cd/dtrip_wave_MRIP_simulated_all_states.png", as(png) replace width(3000)
 }
 else {
-    display as error ///
-        "No directed-trip graphs exist; combined graph was not exported."
+    display as error  "No directed-trip graphs exist; combined graph was not exported."
 }
 
 
@@ -507,19 +497,13 @@ foreach s of local states {
 
     if `"`graph_list'"' != "" {
 
-        grc1leg `graph_list', ///
-            cols(3) ///
-            title("Catch totals, MRIP vs. simulated estimates `s'", ///
-                  size(small)) ///
-            name(catch_totals_`s', replace)
+        grc1leg `graph_list', cols(3) title("Catch totals, MRIP vs. simulated estimates `s'", size(small)) ///
+            name(catch_totals_`s', replace) xsize(12) ysize(8) 
 
-        graph export ///
-            "$figure_cd/catch_total_wave_MRIP_simulated_`s'.png", ///
-            as(png) replace
+        graph export "$figure_cd/catch_total_wave_MRIP_simulated_`s'.png", as(png) replace width(3000)
     }
     else {
-        display as error ///
-            "No catch-total graphs exist for state `s'; no combined graph exported."
+        display as error "No catch-total graphs exist for state `s'; no combined graph exported."
     }
 }
 
@@ -708,15 +692,10 @@ foreach s of local states {
 
 if `"`dtrip_graphs'"' != "" {
 
-    grc1leg `dtrip_graphs', ///
-        cols(3) ///
-        title("Directed trips, MRIP vs. simulated estimates", ///
-              size(small)) ///
-        name(dtrip_state_all, replace)
+    grc1leg `dtrip_graphs', cols(3) title("Directed trips, MRIP vs. simulated estimates", size(small))  ///
+		name(dtrip_state_all, replace) xsize(12) ysize(8) 
 
-    graph export ///
-        "$figure_cd/dtrip_state_MRIP_simulated_all_states.png", ///
-        as(png) replace
+    graph export "$figure_cd/dtrip_state_MRIP_simulated_all_states.png", as(png) replace width(3000)
 }
 else {
     display as error ///
@@ -756,15 +735,10 @@ foreach s of local states {
 
     if `"`catch_graphs'"' != "" {
 
-        grc1leg `catch_graphs', ///
-            cols(3) ///
-            title("Catch totals, MRIP vs. simulated estimates `s'", ///
-                  size(small)) ///
-            name(catch_total_state_`s', replace)
+        grc1leg `catch_graphs', cols(3)  title("Catch totals, MRIP vs. simulated estimates `s'",  size(small)) ///
+            name(catch_total_state_`s', replace) xsize(12) ysize(8) 
 
-        graph export ///
-            "$figure_cd/catch_total_state_MRIP_simulated_`s'.png", ///
-            as(png) replace
+        graph export "$figure_cd/catch_total_state_MRIP_simulated_`s'.png", as(png) width(3000) replace
     }
     else {
         display as error ///
